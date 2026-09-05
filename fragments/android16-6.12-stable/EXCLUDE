@@ -1,6 +1,0 @@
-# Features that cannot live on this tree (one name per line).
-# cifs: CIFS=y selects NETFS_SUPPORT=y, but 6.12's module list demands
-# fs/netfs/netfs.ko as a loadable module (declared-but-not-built =
-# Kleaf hard-fail). CIFS stays off here; harmless elsewhere (no
-# NETFS_SUPPORT symbol pre-6.12, nothing expects the .ko on 6.18).
-cifs

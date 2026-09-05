@@ -49,9 +49,11 @@ through untouched.
   (5.10x2, 14-5.15, 6.1, 6.6, 6.12-pending); `android13-5.15` is
 deliberately excluded (its ABI list lacks the `zpool` exports — strict
   KMI fail, proven), as is 6.18 (`zpool` deleted upstream). A per-dir
-  `EXCLUDE` file drops shared features a tree cannot take (currently:
-  `cifs` on 6.12 — `CIFS=y` would select `NETFS_SUPPORT=y` while the
-  module list demands `netfs.ko`).
+  `EXCLUDE` file drops shared features a tree cannot take. Built-in
+  posture orphans (a `=y` select vs a demanded `.ko`, e.g. `CIFS` →
+  `NETFS_SUPPORT` on 6.12) are handled instead by
+  `tools/drop-stale-module-outs.sh` at build time (method: WildKernels)
+  so the feature keeps working.
 - Generated `.fragments/` (KSU/NoMount/guard) ride the same pipeline
 
 Era handling: `build.sh` trees bake fragments into the defconfig +

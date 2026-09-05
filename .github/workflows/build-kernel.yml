@@ -203,6 +203,18 @@ jobs:
           bash "$GITHUB_WORKSPACE/builder/tools/stage-kleaf-fragments.sh" "${ARGS[@]}"
           [ -f common/builder_fragments.config ] && echo "has=true" >>"$GITHUB_OUTPUT" || echo "has=false" >>"$GITHUB_OUTPUT"
 
+      # Built-in posture orphans: a =y select forces the target built-in
+      # while the module list still demands its .ko (method: WildKernels
+      # CIFS action). Version- + selector-gated inside the script; upstream
+      # layout drift fails fast instead of silently.
+      - name: Drop stale module outs
+        if: matrix.build_kind == 'kleaf'
+        run: |
+          cd kernel
+          bash "$GITHUB_WORKSPACE/builder/tools/drop-stale-module-outs.sh" \
+            --tree common --kversion 6.12 --when-symbol CONFIG_CIFS \
+            --drop fs/netfs/netfs.ko
+
       # Debug: resolved values for fragment-touched symbols. Best effort
       # (never fails the build); ground truth when Kleaf's module/ABI
       # checks disagree with our Kconfig reading.
