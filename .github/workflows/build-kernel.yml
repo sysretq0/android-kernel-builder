@@ -9,6 +9,9 @@ on:
       our_revision:
         description: "Override common revision (default: per-branch -stable, fallback -lts)"
         default: ""
+      extra_config:
+        description: "Inline CONFIG lines for this run only, comma-separated (e.g. 'CONFIG_TCP_CONG_BBR=y')"
+        default: ""
   schedule:
     - cron: "0 5 * * 0" # weekly Sunday 05:00 UTC
 
@@ -90,11 +93,45 @@ jobs:
           cd kernel
           repo sync -c -j$(nproc) --no-tags --fail-fast
 
+      # Portable config injection (all eras): merge fragments/common/*.config
+      # + fragments/<our_branch>/*.config (+ dispatch extra_config) into
+      # arch/arm64/configs/gki_defconfig. Both build paths start from
+      # `make gki_defconfig`, so one mechanism covers build.sh and Kleaf.
+      # No fragments present = stock defconfig, this step is a no-op.
+      - name: Apply config fragments
+        run: |
+          cd kernel
+          ARGS=(--kernel-dir common)
+          [ -d "$GITHUB_WORKSPACE/builder/fragments/common" ] &&
+            ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/common")
+          [ -d "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}" ] &&
+            ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}")
+          [ -n "${{ inputs.extra_config }}" ] &&
+            ARGS+=(--extra-config "${{ inputs.extra_config }}")
+          bash "$GITHUB_WORKSPACE/builder/tools/apply-fragments.sh" "${ARGS[@]}"
+
+      # build.sh only: check_defconfig requires the committed defconfig to
+      # byte-match canonical savedefconfig, so fragment injection must be
+      # followed by the self-heal stage (vendored from CloudFox) as
+      # POST_DEFCONFIG_CMDS. Kleaf needs nothing extra (order-insensitive).
+      - name: Prepare portable build config (build.sh era)
+        if: matrix.build_kind == 'build_sh'
+        run: |
+          cd kernel
+          cp "$GITHUB_WORKSPACE/builder/tools/self-heal-config.sh" build/self-heal-config.sh
+          chmod +x build/self-heal-config.sh
+          cat > build.config.portable <<'EOF'
+          export KERNEL_DIR=common
+          . ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki.aarch64
+          export POST_DEFCONFIG_CMDS='${ROOT_DIR}/build/self-heal-config.sh'
+          EOF
+          cat build.config.portable
+
       - name: Build (build.sh era)
         if: matrix.build_kind == 'build_sh'
         run: |
           cd kernel
-          BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
+          BUILD_CONFIG=build.config.portable build/build.sh
 
       - name: Build (Kleaf era)
         if: matrix.build_kind == 'kleaf'
