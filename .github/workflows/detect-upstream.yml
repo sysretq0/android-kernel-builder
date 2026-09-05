@@ -1,0 +1,66 @@
+name: detect-upstream
+# New kernel-source commit -> release run. Mirror (02:30) + merge-stable
+# (03:30) land daily; this ticks every 6h and catches movement within a tick.
+# Resolution mirrors build-kernel's "stable if exists, else LTS" exactly, so
+# a branch graduating review->stable also fires (ref name changes = diff).
+#
+# Trade-off (deliberate): state advances only after the dispatch is
+# accepted, so a missed release is impossible; a failed state-push can
+# double-dispatch (visible, deletable) instead of silently skipping.
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout builder
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Detect new upstream tips, release on change
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTO: ${{ vars.AUTO_RELEASE }}
+        run: |
+          set -euo pipefail
+          BUILDER="sysretq0/android-kernel-builder"
+          COMMON="sysretq0/android-kernel-common"
+          PAIRS="android12-5.10-stable:android12-5.10-lts
+          android13-5.10-stable:android13-5.10-lts
+          android13-5.15-stable:android13-5.15-lts
+          android14-5.15-stable:android14-5.15-lts
+          android14-6.1-stable:android14-6.1-lts
+          android15-6.6-stable:android15-6.6-lts
+          android16-6.12-stable:android16-6.12-lts
+          android17-6.18-stable:android17-6.18-lts"
+          git ls-remote --heads "https://github.com/$COMMON" > /tmp/heads.txt
+          : > .ci/upstream-shas.txt.new
+          # shellcheck disable=SC2086
+          for pair in $PAIRS; do
+            want="${pair%%:*}"; fb="${pair#*:}"
+            if grep -q "refs/heads/$want\$" /tmp/heads.txt; then rev="$want"; else rev="$fb"; fi
+            sha=$(grep "refs/heads/$rev\$" /tmp/heads.txt | cut -f1)
+            echo "$want $rev $sha" >> .ci/upstream-shas.txt.new
+          done
+          if cmp -s .ci/upstream-shas.txt .ci/upstream-shas.txt.new; then
+            echo "no upstream change"; rm .ci/upstream-shas.txt.new; exit 0
+          fi
+          echo "upstream moved:"; diff .ci/upstream-shas.txt .ci/upstream-shas.txt.new || true
+          [ "$AUTO" = "true" ] || { echo "AUTO_RELEASE != true; state kept, no dispatch"; rm .ci/upstream-shas.txt.new; exit 0; }
+          busy=$(gh run list --repo "$BUILDER" --workflow build-kernel.yml --status in_progress --limit 1 --json databaseId --jq length)
+          [ "$busy" = "0" ] || { echo "build already running; retry next tick"; rm .ci/upstream-shas.txt.new; exit 0; }
+          gh workflow run build-kernel.yml --repo "$BUILDER" --ref main \
+            -f release=true -f ksu_ref='android17-6.18-stable:dev'
+          mv .ci/upstream-shas.txt.new .ci/upstream-shas.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .ci/upstream-shas.txt
+          git commit -m "ci: upstream tips moved, release dispatched" || true
+          git push || echo "WARN: state push failed (next tick may double-dispatch)"

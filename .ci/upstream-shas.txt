@@ -1,0 +1,8 @@
+android12-5.10-stable android12-5.10-stable 47f3be4bebff8671abd30840f753d09c358f032b
+android13-5.10-stable android13-5.10-stable 452567d1985b87b56468536292b8eccd299a6c4b
+android13-5.15-stable android13-5.15-lts e9b8a6529ffa211b85fc77f2646cace85b8bf849
+android14-5.15-stable android14-5.15-lts 1131d6cc58adbf8e901260753fc1a91cd9393401
+android14-6.1-stable android14-6.1-lts f06f16e9fe746ed975037d3581f943c5c8eeec03
+android15-6.6-stable android15-6.6-lts d8db4cf8c94dfd1f15b856d1ed22e355fddf1ce6
+android16-6.12-stable android16-6.12-lts 88745071d321b99ae785efdca49c1e4d972fb6df
+android17-6.18-stable android17-6.18-lts 32626cb7b3a96196b8ca58b1ebf6d946b75509a7
