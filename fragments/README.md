@@ -18,6 +18,9 @@ fragments/
 (`our_branch` is the `-stable` name, so family fragments apply whether the
 build resolved `-stable` or fell back to `-lts`.)
 
+Files renamed to `*.config.bak` are ignored — use that to park a fragment
+while bisecting, then `git mv` it back to reintroduce.
+
 ## Fragment format
 
 Same as upstream `arch/arm64/configs/*.fragment` files. Every non-blank line
