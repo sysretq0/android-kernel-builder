@@ -58,6 +58,26 @@ jobs:
         with:
           path: builder
 
+      # Throwaway runner: nuke preinstalled SDK/toolchain trees directly
+      # (vendored from CloudFox-Kernel-Builder, no third-party action).
+      # Full kernel tree + prebuilts + bazel cache need tens of GB.
+      - name: Free disk space
+        run: |
+          sudo bash "$GITHUB_WORKSPACE/builder/tools/free-disk-space.sh"
+          df -h
+
+      # Kernel link far exceeds the 16GB runner RAM; 24G swap keeps
+      # LD/BTF/clang from OOM-killing (same as CloudFox).
+      - name: Add 24G swap
+        run: |
+          sudo swapoff -a
+          sudo rm -f /swapfile
+          sudo fallocate -l 24G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=24576
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       # Resolve common revision: use our -stable branch if the merge has
       # landed, else fall back to the mirrored -lts tip. Manual dispatch
       # can force any revision via the our_revision input.
