@@ -21,6 +21,18 @@ build resolved `-stable` or fell back to `-lts`.)
 Files renamed to `*.config.bak` are ignored — use that to park a fragment
 while bisecting, then `git mv` it back to reintroduce.
 
+## Stock-state rule (false-positive warning)
+
+Never judge whether a fragment "does anything" from `gki_defconfig`
+text. It lies in both directions: Kconfig `default y` and `select`
+chains resolve symbols to `=y` without them appearing in the defconfig
+(e.g. an entire fragment can be live-stock while its symbols are absent
+from the file), and invisible symbols vanish entirely. Ground truth is
+only the **resolved** config without the fragment: a fragmentless
+build's `config.gz`, or the Dump-resolved-config step in CI (which
+covers every fragment symbol for this reason). Deletions require
+resolved proof on every tree the fragment applies to.
+
 ## Fragment format
 
 Same as upstream `arch/arm64/configs/*.fragment` files. Every non-blank line
