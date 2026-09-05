@@ -20,6 +20,10 @@ on:
         description: "OpenRouter model for supervisor review (empty = :free default)"
         required: false
         default: "minimax/minimax-m3:free"
+      force:
+        description: "Bypass change/attempt gates (retry quarantined inputs)"
+        type: boolean
+        default: false
 
 concurrency:
   group: merge-stable
@@ -64,6 +68,7 @@ jobs:
       STABLE: ${{ matrix.stable }}
       RESOLVER_MODEL: ${{ inputs.resolver_model }}
       SUPERVISOR_MODEL: ${{ inputs.supervisor_model }}
+      FORCE: ${{ inputs.force }}
     steps:
       - name: Checkout builder (AI harness tools)
         uses: actions/checkout@v4
@@ -73,6 +78,7 @@ jobs:
         env:
           DEST_TOKEN: ${{ secrets.KERNEL_MIRROR_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }} # quarantine issues need it in env (issues:write granted above)
         run: |
           set -euo pipefail
           if [ -z "${DEST_TOKEN:-}" ]; then
@@ -117,6 +123,27 @@ jobs:
           else
             echo "dest $OUT does not exist yet"
           fi
+
+          # Change gate: OUT already contains both inputs -> nothing to merge.
+          # Pure reachability, so AI fixup commits / quarantines can't fool it;
+          # any uncertainty exits non-zero and falls through to a full run.
+          if [ "$FORCE" != "true" ] && [ -n "$OLD" ] && git merge-base --is-ancestor "$LTS_TIP" "refs/remotes/dest/$OUT" 2>/dev/null \
+              && git merge-base --is-ancestor "$STABLE_TIP" "refs/remotes/dest/$OUT" 2>/dev/null; then
+            echo "$OUT ($OLD) already contains LTS $LTS_TIP + $STABLE_TIP; skipping"
+            exit 0
+          fi
+
+          # Attempt memory: same inputs already quarantined -> don't reburn AI.
+          # Open issues are the store (no push races, no token widening); the
+          # HTML trailer is invisible when rendered. Close the issue or
+          # force=true to retry. Any tooling failure falls through to a run.
+          TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
+          if [ "$FORCE" != "true" ] && GH_TOKEN="$TOKEN" gh issue list --repo "$DEST_REPO" --state open --limit 50 \
+              --json title,body --jq '.[] | select(.title | contains("['$OUT']")) | .body' 2>/dev/null \
+              | grep -qF "<!-- merge-state OUT=$OUT LTS_TIP=$LTS_TIP STABLE_TIP=$STABLE_TIP -->"; then
+            echo "$OUT already quarantined for LTS $LTS_TIP + $STABLE_TIP; skipping (close the issue or force=true to retry)"
+            exit 0
+          fi
           OLD_REVIEW=""
           if git fetch dest "refs/heads/$REVIEW_OUT:refs/remotes/dest/$REVIEW_OUT" 2>/dev/null; then
             OLD_REVIEW=$(git rev-parse "refs/remotes/dest/$REVIEW_OUT")
@@ -134,6 +161,7 @@ jobs:
             local reason=$1 title=$2 rlease=""
             echo "QUARANTINE: $title"
             cat "$reason" 2>/dev/null || true
+            echo "<!-- merge-state OUT=$OUT LTS_TIP=$LTS_TIP STABLE_TIP=$STABLE_TIP -->" >> "$reason"
             MERGED=$(git rev-parse HEAD)
             if [ -n "$OLD_REVIEW" ]; then rlease="--force-with-lease=refs/heads/$REVIEW_OUT:$OLD_REVIEW";
             else rlease="--force-with-lease=refs/heads/$REVIEW_OUT:"; fi
@@ -170,6 +198,7 @@ jobs:
               echo "::error::conflict needs AI but OPENROUTER_API_KEY is missing — quarantining unmerged state as issue only."
               git merge --abort || true
               { echo "Merge $STABLE ($STABLE_TIP) into $LTS ($LTS_TIP) conflicted in $NCONF files but no OPENROUTER_API_KEY is configured."; echo; cat /tmp/conflicted.txt; } > /tmp/quarantine.md
+              echo "<!-- merge-state OUT=$OUT LTS_TIP=$LTS_TIP STABLE_TIP=$STABLE_TIP -->" >> /tmp/quarantine.md
               TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
               if [ -n "$TOKEN" ]; then GH_TOKEN="$TOKEN" gh issue create --repo "$DEST_REPO" --title "[$OUT] conflict, no AI key" --body-file /tmp/quarantine.md || true; fi
               exit 1
@@ -197,6 +226,7 @@ jobs:
               echo "::error::AI failed on: $(cat /tmp/ai_failed.txt)"
               git merge --abort || true
               { echo "AI resolver failed on $LTS + $STABLE. Files:"; echo; cat /tmp/ai_failed.txt; } > /tmp/quarantine.md
+              echo "<!-- merge-state OUT=$OUT LTS_TIP=$LTS_TIP STABLE_TIP=$STABLE_TIP -->" >> /tmp/quarantine.md
               TOKEN="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
               if [ -n "$TOKEN" ]; then GH_TOKEN="$TOKEN" gh issue create --repo "$DEST_REPO" --title "[$OUT] AI resolve failed" --body-file /tmp/quarantine.md || true; fi
               exit 1

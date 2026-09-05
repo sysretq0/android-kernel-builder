@@ -54,6 +54,15 @@ jobs:
           fi
           B="$BRANCH"
 
+          # Change gate: dest already matches upstream -> nothing to sync.
+          # Two ls-remote on quiet days instead of a full-history clone.
+          UP_TIP=$(git ls-remote "$UPSTREAM_URL" "refs/heads/$B" | cut -f1)
+          DEST_TIP=$(git ls-remote "https://github.com/$DEST_REPO" "refs/heads/$B" | cut -f1)
+          if [ -n "$UP_TIP" ] && [ "$UP_TIP" = "$DEST_TIP" ]; then
+            echo "mirror: $B already at $UP_TIP; skipping"
+            exit 0
+          fi
+
           rm -rf mirror.git
           git init --bare -q mirror.git
           cd mirror.git
