@@ -41,18 +41,18 @@ PATCH_VBMETA_FLAG=auto;
 . tools/ak3-core.sh;
 
 # boot install
-ui_print " ";
-ui_print "=====================================";
-ui_print " sysretq0 GKI @REV@";
-ui_print " @FEATURES@";
-ui_print " Built @DATE@";
-ui_print "=====================================";
 model=$(getprop ro.product.model 2>/dev/null);
 [ -n "$model" ] || model="unknown device";
 slot=$(getprop ro.boot.slot_suffix 2>/dev/null);
 [ -n "$slot" ] || slot=$(grep -o 'androidboot.slot_suffix=[^ ]*' /proc/cmdline 2>/dev/null | cut -d= -f2);
 [ -n "$slot" ] || slot="a-only";
+ui_print " ";
+ui_print "=====================================";
+ui_print " sysretq0 GKI @REV@";
+ui_print " Built @DATE@";
 ui_print " Device: $model | Slot: $slot";
+ui_print "=====================================";
+@FEATURE_LINES@
 ui_print " Unpacking boot image...";
 split_boot; # skip ramdisk unpack (no ramdisk mods; switch to dump_boot if you add any)
 

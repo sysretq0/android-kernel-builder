@@ -3,9 +3,11 @@
 #
 # Usage:
 #   pack-anykernel.sh --image <Image.lz4|Image.gz|Image> --rev <name>
-#     [--features <"A B + x y">] [--out <zip path>] [--akdir <anykernel/ dir>]
+#     [--features <"a:b:c">] [--out <zip path>] [--akdir <anykernel/ dir>]
 #
-# --features stamps @FEATURES@ (no / or | -- sed-delimiter-hostile); date
+# --features is a colon-separated list expanded to one "[check] item"
+# ui_print line per entry, replacing the @FEATURE_LINES@ placeholder
+# (sed r-command: byte-transparent, no delimiter collisions). Date
 # stamps @DATE@ automatically.
 #
 # Stages META-INF + tools (pristine AK3 backend, magiskboot refreshed)
@@ -46,8 +48,15 @@ trap 'rm -rf "$stage"' EXIT
 cp -a "$AKDIR/META-INF" "$AKDIR/tools" "$stage/"
 cp -a "$AKDIR/anykernel.sh" "$AKDIR/banner" "$stage/"
 DATE=$(date -u +%Y-%m-%d)
-sed -i "s|@REV@|$REV|g; s|@FEATURES@|$FEATURES|g; s|@DATE@|$DATE|g" "$stage/anykernel.sh"
-grep -q "@REV@\|@FEATURES@\|@DATE@" "$stage/anykernel.sh" && { echo "pack-anykernel: unstamped placeholder left" >&2; exit 1; }
+sed -i "s|@REV@|$REV|g; s|@DATE@|$DATE|g" "$stage/anykernel.sh"
+> "$stage/features.tmp"
+OLDIFS=$IFS; IFS=:
+for f in $FEATURES; do
+  [ -n "$f" ] && echo "ui_print \" [✓] $f\";" >> "$stage/features.tmp"
+done
+IFS=$OLDIFS
+sed -i -e "/@FEATURE_LINES@/r $stage/features.tmp" -e "/@FEATURE_LINES@/d" "$stage/anykernel.sh"
+grep -q "@REV@\|@FEATURE_LINES@\|@DATE@" "$stage/anykernel.sh" && { echo "pack-anykernel: unstamped placeholder left" >&2; exit 1; }
 cp -a "$IMAGE" "$stage/"
 cat > "$stage/version" <<EOF
 $REV

@@ -347,13 +347,13 @@ jobs:
           done
           [ -n "$IMG" ] || { echo "no kernel image for AK3 zip; skipping"; exit 0; }
           mkdir -p "$GITHUB_WORKSPACE/release"
-          INT=""; [ "${{ inputs.ksu }}" = "true" ] && INT="${INT}KernelSU-Next ";
-          [ "${{ inputs.nomount }}" = "true" ] && INT="${INT}NoMount ";
-          [ "${{ inputs.guard }}" = "true" ] && INT="${INT}Guard ";
-          FRAGS=$(cd "$GITHUB_WORKSPACE/builder/fragments/common" && ls *.config 2>/dev/null | sed 's/\.config$//' | tr '\n' ' ')
+          INT=""; [ "${{ inputs.ksu }}" = "true" ] && INT="${INT}KernelSU-Next:";
+          [ "${{ inputs.nomount }}" = "true" ] && INT="${INT}NoMount:";
+          [ "${{ inputs.guard }}" = "true" ] && INT="${INT}Partition Guard:";
+          FRAGS=$(cd "$GITHUB_WORKSPACE/builder/fragments/common" && ls *.config 2>/dev/null | sed 's/\.config$//' | paste -sd: -)
           bash "$GITHUB_WORKSPACE/builder/tools/pack-anykernel.sh" \
             --image "$IMG" --rev "${{ steps.rev.outputs.rev }}" \
-            --features "${INT}+ ${FRAGS}" \
+            --features "${INT}${FRAGS}" \
             --out "$GITHUB_WORKSPACE/release/anykernel-${{ steps.rev.outputs.rev }}.zip"
 
       # Raw outputs (Image/vmlinux/System.map) stay here; the AK3 zip
