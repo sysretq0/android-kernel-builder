@@ -385,10 +385,37 @@ jobs:
           files=(zips/*.zip)
           [ "${#files[@]}" -gt 0 ] || { echo "no AnyKernel3 zips; skipping release"; exit 0; }
           TAG="kernel-build-r${{ github.run_number }}"
-          NOTES="Branch: ${{ inputs.branch || 'all' }} | KSU: ${{ inputs.ksu }} | NoMount: ${{ inputs.nomount }} | Guard: ${{ inputs.guard }} | run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          FRAGS=$(cd "$GITHUB_WORKSPACE/builder/fragments/common" && ls *.config 2>/dev/null | sed 's/\.config$//' | tr '\n' ' ')
+          {
+            echo "## ⚡ GKI Kernel \`$TAG\`"
+            echo ""
+            echo "### 📦 Zips"
+            for z in "${files[@]}"; do echo "- \`$(basename "$z")\`"; done
+            echo ""
+            echo "### ⚙️ Build config"
+            echo "| Option | Value |"
+            echo "|---|---|"
+            echo "| Branches | \`${{ inputs.branch || 'all' }}\` |"
+            echo "| KernelSU-Next | \`${{ inputs.ksu }}\` (\`${{ inputs.ksu_ref || 'latest tag' }}\`) |"
+            echo "| NoMount | \`${{ inputs.nomount }}\` |"
+            echo "| Partition Guard | \`${{ inputs.guard }}\` |"
+            echo "| Extra fragments | \`${{ inputs.fragments }}\` |"
+            echo "| Extra config | \`${{ inputs.extra_config }}\` |"
+            echo "| Active fragments | $FRAGS |"
+            echo ""
+            echo "### 📲 Flash"
+            echo "- AnyKernel3 zip for **your branch only**, flash in recovery or KernelSU manager"
+            echo "- No auto-backup — **back up \`boot\` first**"
+            echo "- Kernel always lives in \`boot\` (\`BLOCK=boot\`), slot-aware"
+            echo ""
+            echo "### 🔗 Links"
+            echo "- Build logs: $RUN_URL"
+            echo "- Risk register: [RISK.md](https://github.com/${{ github.repository }}/blob/main/RISK.md)"
+          } > release-notes.md
           if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
             gh release upload "$TAG" "${files[@]}" --clobber --repo "${{ github.repository }}"
           else
             gh release create "$TAG" "${files[@]}" --prerelease \
-              --title "$TAG" --notes "$NOTES" --repo "${{ github.repository }}"
+              --title "$TAG" --notes-file release-notes.md --repo "${{ github.repository }}"
           fi
