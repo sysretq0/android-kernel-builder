@@ -26,6 +26,13 @@ on:
       nomount_ref:
         description: "NoMount branch/tag/commit (default: dev branch)"
         default: ""
+      guard:
+        description: "Integrate Partition Guard LSM (NVRAM/persist/EFS)"
+        type: boolean
+        default: true
+      guard_ref:
+        description: "Partition Guard branch/tag/commit (default: main)"
+        default: ""
   schedule:
     - cron: "0 5 * * 0" # weekly Sunday 05:00 UTC
 
@@ -144,6 +151,14 @@ jobs:
         run: |
           cd kernel
           bash "$GITHUB_WORKSPACE/builder/tools/setup-nomount.sh" --ref "${{ inputs.nomount_ref }}"
+
+      # Partition Guard (own LSM): symlink into common/security + Makefile /
+      # Kconfig / LSM-list hooks. Writes .fragments/guard.config.
+      - name: Integrate Partition Guard
+        if: inputs.guard != false
+        run: |
+          cd kernel
+          bash "$GITHUB_WORKSPACE/builder/tools/setup-partition-guard.sh" --ref "${{ inputs.guard_ref }}"
 
       # Portable config injection, per era:
       # - build.sh: merge fragments/common + fragments/<our_branch> (+ extra
