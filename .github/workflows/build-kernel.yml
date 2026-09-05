@@ -41,6 +41,10 @@ on:
         description: "Publish AnyKernel3 zips to GitHub Release (false = artifacts only)"
         type: boolean
         default: false
+      telegram:
+        description: "Post the filled release template to Telegram channel (needs TELEGRAM_* secrets)"
+        type: boolean
+        default: true
   schedule:
     - cron: "0 5 * * 0" # weekly Sunday 05:00 UTC
 
@@ -446,3 +450,16 @@ jobs:
             gh release create "$TAG" "${files[@]}" telegram-post.txt --prerelease \
               --title "$TAG" --notes-file release-notes.md --repo "${{ github.repository }}"
           fi
+      - name: Notify Telegram channel
+        if: inputs.telegram
+        env:
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT" ] || { echo "telegram secrets unset; skipping"; exit 0; }
+          [ -f telegram-post.txt ] || { echo "no telegram post; skipping"; exit 0; }
+          curl -sf --max-time 30 -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TG_CHAT}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "text=$(cat telegram-post.txt)" > /dev/null \
+            && echo "telegram posted" || { echo "telegram post FAILED"; exit 1; }
