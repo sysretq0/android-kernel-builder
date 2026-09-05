@@ -13,56 +13,51 @@ on:
     - cron: "0 5 * * 0" # weekly Sunday 05:00 UTC
 
 jobs:
+  # Pre-filter the build matrix so only requested branches spawn jobs.
+  # Empty input (schedule) or 'all' = build everything.
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - id: set
+        env:
+          ONLY: ${{ inputs.branch }}
+        run: |
+          ALL='{"include":[
+            {"our_branch":"android12-5.10-stable","fallback_branch":"android12-5.10-lts","manifest_branch":"common-android12-5.10-lts","build_kind":"build_sh"},
+            {"our_branch":"android13-5.10-stable","fallback_branch":"android13-5.10-lts","manifest_branch":"common-android13-5.10-lts","build_kind":"build_sh"},
+            {"our_branch":"android13-5.15-stable","fallback_branch":"android13-5.15-lts","manifest_branch":"common-android13-5.15-lts","build_kind":"build_sh"},
+            {"our_branch":"android14-5.15-stable","fallback_branch":"android14-5.15-lts","manifest_branch":"common-android14-5.15-lts","build_kind":"kleaf"},
+            {"our_branch":"android14-6.1-stable","fallback_branch":"android14-6.1-lts","manifest_branch":"common-android14-6.1-lts","build_kind":"kleaf"},
+            {"our_branch":"android15-6.6-stable","fallback_branch":"android15-6.6-lts","manifest_branch":"common-android15-6.6-lts","build_kind":"kleaf"},
+            {"our_branch":"android16-6.12-stable","fallback_branch":"android16-6.12-lts","manifest_branch":"common-android16-6.12-lts","build_kind":"kleaf"},
+            {"our_branch":"android17-6.18-stable","fallback_branch":"android17-6.18-lts","manifest_branch":"common-android17-6.18-lts","build_kind":"kleaf"}
+          ]}'
+          # Build methods: build.sh for 5.10 + android13-5.15 (era-default),
+          # Kleaf (tools/bazel) for android14-5.15 and newer.
+          if [ -z "$ONLY" ] || [ "$ONLY" = "all" ]; then
+            echo "matrix=$ALL" >>"$GITHUB_OUTPUT"
+          else
+            echo "matrix=$(echo "$ALL" | jq -c --arg o "$ONLY" '{include: [.include[] | select(.our_branch==$o or .fallback_branch==$o)]}')" >>"$GITHUB_OUTPUT"
+          fi
+          cat "$GITHUB_OUTPUT"
+
   build:
-    # Job-level filter: non-matching branches show as Skipped (grey),
-    # not fake-green success. Empty input = schedule event = build all.
-    if: ${{ inputs.branch == '' || inputs.branch == 'all' || inputs.branch == matrix.our_branch || inputs.branch == matrix.fallback_branch }}
+    needs: setup
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          # 5.10: legacy build.sh only (no Kleaf in manifest)
-          - our_branch: android12-5.10-stable
-            fallback_branch: android12-5.10-lts
-            manifest_branch: common-android12-5.10-lts
-            build_kind: build_sh
-          - our_branch: android13-5.10-stable
-            fallback_branch: android13-5.10-lts
-            manifest_branch: common-android13-5.10-lts
-            build_kind: build_sh
-          # 5.10 / android13-5.15: era-default build.sh; android14-5.15+: Kleaf
-          - our_branch: android13-5.15-stable
-            fallback_branch: android13-5.15-lts
-            manifest_branch: common-android13-5.15-lts
-            build_kind: build_sh
-          - our_branch: android14-5.15-stable
-            fallback_branch: android14-5.15-lts
-            manifest_branch: common-android14-5.15-lts
-            build_kind: kleaf
-          - our_branch: android14-6.1-stable
-            fallback_branch: android14-6.1-lts
-            manifest_branch: common-android14-6.1-lts
-            build_kind: kleaf
-          # 6.6 / 6.12 / 6.18: Kleaf Bazel-only
-          - our_branch: android15-6.6-stable
-            fallback_branch: android15-6.6-lts
-            manifest_branch: common-android15-6.6-lts
-            build_kind: kleaf
-          - our_branch: android16-6.12-stable
-            fallback_branch: android16-6.12-lts
-            manifest_branch: common-android16-6.12-lts
-            build_kind: kleaf
-          - our_branch: android17-6.18-stable
-            fallback_branch: android17-6.18-lts
-            manifest_branch: common-android17-6.18-lts
-            build_kind: kleaf
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
     steps:
       - name: Checkout builder (for manifest template)
         uses: actions/checkout@v4
         with:
           path: builder
 
+      # Resolve common revision: use our -stable branch if the merge has
+      # landed, else fall back to the mirrored -lts tip. Manual dispatch
+      # can force any revision via the our_revision input.
       - name: Pick revision (stable if exists, else LTS)
         id: rev
         env:
