@@ -3,19 +3,11 @@ name: mirror-android-common-lts
 # Full-history mirror of android.googlesource.com/kernel/common LTS branches
 # into sysretq0/android-kernel-common-lts.
 # - Whole history (no shallow, no filter, no squash)
-# - No force push (fast-forward only, fails safe on divergence)
-# - Preserves tags + commit metadata bit-for-bit (pure fetch + push, no rewrites)
-# - 8 branches sync in parallel (matrix); tags sync once afterwards.
-#
-# Why no push races:
-# - Each matrix job pushes exactly ONE distinct ref (refs/heads/<branch>),
-#   so no two jobs ever lock the same ref (no "cannot lock ref" failures).
-# - No multi-ref --atomic pushes from parallel jobs (atomic locks all refs
-#   at once and would contend). Each job pushes only its own branch.
-# - Tags are pushed once in the downstream publish-tags job (needs: sync),
-#   not 8x concurrently, and without --force so existing tags never move.
-# - Top-level concurrency serializes overlapping cron runs; fail-fast:false
-#   lets the other branches finish if one fails.
+# - No force push anywhere (no '+' refspecs, no --force; fails safe)
+# - Preserves tags + commit metadata bit-for-bit (pure fetch + push)
+# - 8 branches sync in parallel (matrix, one distinct ref per job = no lock races)
+# - Chunked bootstrap pushes stay under GitHub's 2GB single-push limit
+# - Tags: only tags reachable from the 8 branches (one walk, then push once)
 
 on:
   schedule:
@@ -51,17 +43,16 @@ jobs:
       DEST_REPO: sysretq0/android-kernel-common-lts
       BRANCH: ${{ matrix.branch }}
     steps:
-      - name: Mirror one branch (full history, fast-forward only)
+      - name: Mirror one branch (full history, fast-forward only, chunked)
         env:
           DEST_TOKEN: ${{ secrets.KERNEL_MIRROR_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "${DEST_TOKEN:-}" ]; then
-            echo "::error::Missing secret KERNEL_MIRROR_TOKEN (PAT with 'repo' write access to $DEST_REPO)."
-            echo "Set it with: gh secret set KERNEL_MIRROR_TOKEN --repo ${GITHUB_REPOSITORY}"
-            echo "(paste a fine-grained PAT limited to $DEST_REPO: Contents read+write)."
+            echo "::error::Missing secret KERNEL_MIRROR_TOKEN."
             exit 1
           fi
+          B="$BRANCH"
 
           rm -rf mirror.git
           git init --bare -q mirror.git
@@ -70,14 +61,57 @@ jobs:
           git remote add dest "https://x-access-token:${DEST_TOKEN}@github.com/${DEST_REPO}.git"
 
           # Full history: no --depth, no --filter, no --shallow.
-          # No '+' prefix on fetch refspec: never overwrite tracking ref unexpectedly.
-          git fetch --no-tags --prune --verbose upstream "refs/heads/$BRANCH:refs/remotes/upstream/$BRANCH"
+          git fetch --no-tags --prune upstream "refs/heads/$B:refs/remotes/upstream/$B"
+          TIP=$(git rev-parse "refs/remotes/upstream/$B")
+          echo "upstream $B = $TIP"
 
-          echo "$BRANCH $(git rev-parse "refs/remotes/upstream/$BRANCH")"
+          BATCH=20000
+          if git fetch dest "refs/heads/$B:refs/remotes/dest/$B" 2>/dev/null; then
+            DEST="refs/remotes/dest/$B"
+            if ! git merge-base --is-ancestor "$DEST" "$TIP"; then
+              echo "::error::$B on dest is not an ancestor of upstream tip — refusing (no force)."
+              exit 1
+            fi
+            RANGE="$DEST..$TIP"
+          else
+            echo "bootstrap: $B missing on dest, pushing full history in chunks"
+            RANGE="$TIP"
+          fi
 
-          # No '+' prefix => fast-forward only. Fails safe instead of clobbering history.
-          # Single-ref push: locks only refs/heads/$BRANCH, so parallel jobs never contend.
-          git push --verbose dest "refs/remotes/upstream/$BRANCH:refs/heads/$BRANCH"
+          COUNT=$(git rev-list --first-parent --count "$RANGE")
+          echo "commits to push: $COUNT"
+          if [ "$COUNT" -eq 0 ]; then
+            echo "already up to date"
+            exit 0
+          fi
+
+          # Push first-parent history in batches so each single push stays far
+          # under GitHub's 2GB limit (oversized single pushes die with HTTP 500
+          # on git-receive-pack). First-parent order guarantees every step is a
+          # fast-forward of the previous. No '+' anywhere. Each chunk retried
+          # 3x with backoff for transient 500s; a resume just continues the
+          # range on the next run (dest tip stays a valid ancestor).
+          git rev-list --first-parent --reverse "$RANGE" | awk -v n=$BATCH 'NR % n == 0' > batches.txt
+          echo "$TIP" >> batches.txt
+          total=$(wc -l < batches.txt)
+          i=0
+          while read -r S; do
+            i=$((i + 1))
+            attempt=0
+            while [ "$attempt" -lt 3 ]; do
+              attempt=$((attempt + 1))
+              echo "[$i/$total attempt $attempt] $S"
+              if git push dest "$S:refs/heads/$B"; then
+                break
+              fi
+              if [ "$attempt" -eq 3 ]; then
+                echo "::error::push failed 3x for $S"
+                exit 1
+              fi
+              sleep $((attempt * 60))
+            done
+          done < batches.txt
+          echo "done $B = $(git ls-remote dest "refs/heads/$B")"
 
   publish-tags:
     needs: [sync-branch]
@@ -87,7 +121,7 @@ jobs:
       UPSTREAM_URL: https://android.googlesource.com/kernel/common
       DEST_REPO: sysretq0/android-kernel-common-lts
     steps:
-      - name: Mirror all tags (new tags only, no --force)
+      - name: Mirror reachable tags only (new tags, no --force)
         env:
           DEST_TOKEN: ${{ secrets.KERNEL_MIRROR_TOKEN }}
         run: |
@@ -97,18 +131,47 @@ jobs:
             exit 1
           fi
 
+          BRANCHES=(
+            android12-5.10-lts
+            android13-5.10-lts
+            android13-5.15-lts
+            android14-5.15-lts
+            android14-6.1-lts
+            android15-6.6-lts
+            android16-6.12-lts
+            android17-6.18-lts
+          )
+
           rm -rf tags.git
           git init --bare -q tags.git
           cd tags.git
           git remote add upstream "$UPSTREAM_URL"
           git remote add dest "https://x-access-token:${DEST_TOKEN}@github.com/${DEST_REPO}.git"
 
-          # Fetch all tags without '+' so existing tags are never overwritten locally.
-          git fetch --verbose upstream "refs/tags/*:refs/tags/*" || true
-          echo "tags fetched: $(git tag | wc -l)"
+          TIPS=()
+          for b in "${BRANCHES[@]}"; do
+            git fetch --no-tags upstream "refs/heads/$b:refs/remotes/upstream/$b"
+            TIPS+=("refs/remotes/upstream/$b")
+          done
+          git fetch upstream "refs/tags/*:refs/tags/*" || true
+          echo "tags upstream: $(git tag | wc -l)"
 
-          # Push new tags only, without --force: existing tags on dest never move.
-          # Runs once (not per-branch) so concurrent tag pushes can't race.
-          git push --verbose dest "refs/tags/*:refs/tags/*" || {
-            echo "::warning::tag push skipped some refs (existing tags kept as-is). Branch sync above already completed."
-          }
+          # ONE reachability walk across all 8 tips (no per-tag-per-branch cost).
+          git rev-list "${TIPS[@]}" | sort -u > reachable.txt
+
+          # Resolve every tag to its commit in a single for-each-ref pass
+          # (peeled object for annotated tags, own object for lightweight).
+          git for-each-ref --format='%(refname) %(*objectname) %(objectname)' refs/tags |
+            awk '{ c=($2 != "") ? $2 : $3; print c " " $1 }' > tagmap.txt
+          cut -d' ' -f1 tagmap.txt | sort -u > tagcommits.txt
+          grep -Fxf reachable.txt tagcommits.txt > keep.txt || true
+          awk 'NR == FNR { keep[$1] = 1; next } ($1 in keep) { print $2 ":" $2 }' keep.txt tagmap.txt > specs.txt
+          echo "reachable tags: $(wc -l < specs.txt)"
+
+          # Push in batches, once (not per-branch), without --force:
+          # existing tags never move, new ones are added. Commits are already
+          # on dest (branches synced first), so only tag objects travel.
+          if [ -s specs.txt ]; then
+            xargs -a specs.txt -n 200 git push --verbose dest
+          fi
+          echo done
