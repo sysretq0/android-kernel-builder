@@ -157,12 +157,12 @@ jobs:
             git diff --name-only --diff-filter=U > /tmp/conflicted.txt || true
             NCONF=$(wc -l < /tmp/conflicted.txt)
             echo "conflicted files: $NCONF"
-            if [ "$NCONF" -gt 100 ]; then
+            if [ "$NCONF" -gt 10 ]; then
               git merge --abort || true
               git -c user.name="kernel-mirror" -c user.email="kernel-mirror@users.noreply.github.com" checkout -q "$LTS_TIP"
               git -c user.name="kernel-mirror" -c user.email="kernel-mirror@users.noreply.github.com" merge --no-ff --no-edit \
                 -m "Merge $STABLE ($STABLE_TIP) into $LTS ($LTS_TIP) [quarantine: too many conflicts]" "$STABLE_TIP" || true
-              { echo "Too many conflicted files ($NCONF > 100), needs human. LTS=$LTS_TIP stable=$STABLE_TIP"; echo; cat /tmp/conflicted.txt; } > /tmp/quarantine.md
+              { echo "Too many conflicted files ($NCONF > 10), needs human. LTS=$LTS_TIP stable=$STABLE_TIP"; echo; cat /tmp/conflicted.txt; } > /tmp/quarantine.md
               quarantine /tmp/quarantine.md "[$OUT] $NCONF-way conflict, needs human ($LTS + $STABLE)"
               exit 0
             fi
