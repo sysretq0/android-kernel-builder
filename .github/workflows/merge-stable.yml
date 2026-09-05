@@ -187,6 +187,10 @@ jobs:
               [ -z "$f" ] && continue
               if ! AI_MODEL="$RESOLVER_EFF" python3 "$TOOLS/ai-resolve.py" --file "$f" --ours-msg "$OURS_MSG" --theirs-msg "$THEIRS_MSG"; then
                 echo "$f" >> /tmp/ai_failed.txt
+              else
+                # Stage immediately: without this the file stays state U and
+                # the unmerged-paths gate below trips on our own output.
+                git add -- "$f"
               fi
             done < /tmp/ai_files.txt
             if [ -s /tmp/ai_failed.txt ]; then
