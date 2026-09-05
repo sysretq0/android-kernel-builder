@@ -112,7 +112,12 @@ done <"$FILE"
     [ -z "$bad" ] || { echo "apply-fragments: invalid lines in $frag:$bad" >&2; exit 2; }
     printf '# fragment: %s\n' "$frag"
     while IFS= read -r line || [ -n "$line" ]; do
-      case "$line" in ''|'#'*) continue ;; esac
+      # `# CONFIG_X is not set` is a real Kconfig statement, not a comment.
+      case "$line" in
+        '') continue ;;
+        '# CONFIG_'*' is not set') ;;
+        '#'*) continue ;;
+      esac
       case "$line" in
         *' is not set') sym=${line#\# }; sym=${sym%' is not set'}; cand="# ${sym} is not set" ;;
         CONFIG_*=*) sym=${line%%=*}; cand="${sym}=${line#*=}" ;;
