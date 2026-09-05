@@ -242,14 +242,19 @@ jobs:
         run: |
           cd kernel
           tools/bazel build //common:kernel_aarch64_config 2>&1 | tail -3 || true
-          CFG=$(tools/bazel cquery --output=files //common:kernel_aarch64_config 2>/dev/null | grep -m1 '\.config$' || true)
-          [ -n "$CFG" ] || CFG=$(find bazel-bin -name ".config" 2>/dev/null | head -1)
+          echo "--- cquery outputs:"
+          tools/bazel cquery --output=files //common:kernel_aarch64_config 2>&1 | head -10 || true
+          echo "--- config dir:"
+          ls -R bazel-bin/common/kernel_aarch64_config/ 2>/dev/null | head -30 || echo "(no dir)"
+          CFG=""
+          for f in $(find bazel-bin/common/kernel_aarch64_config -type f 2>/dev/null); do
+            if grep -qm1 "Kernel Configuration" "$f" 2>/dev/null; then CFG="$f"; break; fi
+          done
           if [ -n "$CFG" ]; then
             echo "dump-resolved-config: using $CFG"
             grep -E "^(# )?CONFIG_(ZRAM|ZSMALLOC|ZSWAP|ZBUD|FRONTSWAP|NETFS_SUPPORT|CIFS|CIFS_XATTR|CIFS_POSIX|TCP_CONG_BBR|TCP_CONG_BIC|TCP_CONG_WESTWOOD|TCP_CONG_HTCP|TCP_CONG_CUBIC|TCP_CONG_ADVANCED|KPROBES|EXT4_FS|NOMOUNT|PARTITION_GUARD|OVERLAY_FS|WIREGUARD|CAKE)(=| is not set)" "$CFG" | head -40
           else
-            echo "dump-resolved-config: .config not found; bazel-bin layout:"
-            ls bazel-bin/common/ 2>/dev/null | head -20 || echo "(no bazel-bin/common)"
+            echo "dump-resolved-config: no Kconfig file found under kernel_aarch64_config/"
           fi
 
       # setlocalversion stamps -dirty on ANY uncommitted change at compile
