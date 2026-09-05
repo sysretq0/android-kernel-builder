@@ -1,0 +1,131 @@
+name: build-kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build (or 'all')"
+        default: "all"
+      our_revision:
+        description: "Override common revision (default: per-branch -stable, fallback -lts)"
+        default: ""
+  schedule:
+    - cron: "0 5 * * 0" # weekly Sunday 05:00 UTC
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # 5.10 / 5.15: legacy build.sh (build/ project)
+          - our_branch: android12-5.10-stable
+            fallback_branch: android12-5.10-lts
+            manifest_branch: common-android12-5.10-lts
+            build_kind: build_sh
+          - our_branch: android13-5.10-stable
+            fallback_branch: android13-5.10-lts
+            manifest_branch: common-android13-5.10-lts
+            build_kind: build_sh
+          - our_branch: android13-5.15-stable
+            fallback_branch: android13-5.15-lts
+            manifest_branch: common-android13-5.15-lts
+            build_kind: build_sh
+          - our_branch: android14-5.15-stable
+            fallback_branch: android14-5.15-lts
+            manifest_branch: common-android14-5.15-lts
+            build_kind: build_sh
+          # 6.1: transitional, use Bazel
+          - our_branch: android14-6.1-stable
+            fallback_branch: android14-6.1-lts
+            manifest_branch: common-android14-6.1-lts
+            build_kind: kleaf
+          # 6.6 / 6.12 / 6.18: Kleaf Bazel-only
+          - our_branch: android15-6.6-stable
+            fallback_branch: android15-6.6-lts
+            manifest_branch: common-android15-6.6-lts
+            build_kind: kleaf
+          - our_branch: android16-6.12-stable
+            fallback_branch: android16-6.12-lts
+            manifest_branch: common-android16-6.12-lts
+            build_kind: kleaf
+          - our_branch: android17-6.18-stable
+            fallback_branch: android17-6.18-lts
+            manifest_branch: common-android17-6.18-lts
+            build_kind: kleaf
+    steps:
+      - name: Checkout builder (for manifest template)
+        uses: actions/checkout@v4
+        with:
+          path: builder
+
+      - name: Pick revision (stable if exists, else LTS)
+        id: rev
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OVERRIDE: ${{ inputs.our_revision }}
+          WANT: ${{ matrix.our_branch }}
+          FALLBACK: ${{ matrix.fallback_branch }}
+          ONLY: ${{ inputs.branch }}
+        run: |
+          if [ -n "$ONLY" ] && [ "$ONLY" != "all" ] && [ "$ONLY" != "$WANT" ] && [ "$ONLY" != "$FALLBACK" ]; then
+            echo "skip=true" >>"$GITHUB_OUTPUT"; exit 0
+          fi
+          if [ -n "$OVERRIDE" ]; then REV="$OVERRIDE"; else
+            if git ls-remote --heads "https://github.com/sysretq0/android-kernel-common" "$WANT" | grep -q .; then REV="$WANT"; else REV="$FALLBACK"; fi
+          fi
+          echo "rev=$REV" >>"$GITHUB_OUTPUT"
+          echo "Building common@$REV"
+
+      - name: Install repo tool
+        if: steps.rev.outputs.skip != 'true'
+        run: |
+          mkdir -p ~/.bin && curl -sL https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
+          chmod +x ~/.bin/repo && echo "$HOME/.bin" >>"$GITHUB_PATH"
+
+      - name: repo init + vendor our common
+        if: steps.rev.outputs.skip != 'true'
+        run: |
+          mkdir -p kernel && cd kernel
+          repo init -u https://android.googlesource.com/kernel/manifest -b "${{ matrix.manifest_branch }}" --depth=1
+          mkdir -p .repo/local_manifests
+          sed "s/REVISION/${{ steps.rev.outputs.rev }}/" "$GITHUB_WORKSPACE/builder/manifests/vendor-common.xml.template" > .repo/local_manifests/vendor-common.xml
+          cat .repo/local_manifests/vendor-common.xml
+
+      - name: repo sync (minimal)
+        if: steps.rev.outputs.skip != 'true'
+        run: |
+          cd kernel
+          repo sync -c -j$(nproc) --no-tags --fail-fast
+
+      - name: Build (build.sh era)
+        if: steps.rev.outputs.skip != 'true' && matrix.build_kind == 'build_sh'
+        run: |
+          cd kernel
+          BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
+
+      - name: Build (Kleaf era)
+        if: steps.rev.outputs.skip != 'true' && matrix.build_kind == 'kleaf'
+        run: |
+          cd kernel
+          tools/bazel build //common:kernel_aarch64_dist
+
+      - name: Collect outputs
+        if: steps.rev.outputs.skip != 'true'
+        run: |
+          cd kernel
+          mkdir -p "$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}"
+          # build.sh era drops into out/ ; Kleaf into bazel-bin/common/
+          for f in $(find out bazel-bin/common -maxdepth 4 \( -name "Image*" -o -name "vmlinux" -o -name "System.map" \) 2>/dev/null | head -n 20); do
+            cp -v "$f" "$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}/" 2>/dev/null || true
+          done
+          ls -la "$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}/"
+
+      - name: Upload artifacts
+        if: steps.rev.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-${{ steps.rev.outputs.rev }}
+          path: out-${{ steps.rev.outputs.rev }}/
+          if-no-files-found: warn

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Override upstream kernel/common with our mirror (with -stable merges).
+     Copied to .repo/local_manifests/ by build-kernel.yml before `repo sync`.
+     All other projects (build/, prebuilts, modules) still come from googlesource. -->
+<manifest>
+  <remote name="github-common" fetch="https://github.com/sysretq0" />
+  <!-- REVISION is rewritten by the workflow to the matrix `our_revision` -->
+  <project path="common" name="android-kernel-common" remote="github-common" revision="REVISION" />
+</manifest>
