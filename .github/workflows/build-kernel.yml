@@ -37,7 +37,7 @@ jobs:
           # Build methods: build.sh for 5.10 + android13-5.15 (era-default),
           # Kleaf (tools/bazel) for android14-5.15 and newer.
           if [ -z "$ONLY" ] || [ "$ONLY" = "all" ]; then
-            echo "matrix=$ALL" >>"$GITHUB_OUTPUT"
+            echo "matrix=$(echo "$ALL" | jq -c .)" >>"$GITHUB_OUTPUT"
           else
             echo "matrix=$(echo "$ALL" | jq -c --arg o "$ONLY" '{include: [.include[] | select(.our_branch==$o or .fallback_branch==$o)]}')" >>"$GITHUB_OUTPUT"
           fi
