@@ -17,7 +17,7 @@ on:
         type: boolean
         default: true
       ksu_ref:
-        description: "KernelSU-Next tag/commit (default: latest tag)"
+        description: "KernelSU-Next ref: plain (all trees) or branch:ref map, e.g. 'android17-6.18-stable:dev' (default: latest tag)"
         default: ""
       nomount:
         description: "Integrate maxsteeel/nomount VFS subsystem"
@@ -148,7 +148,26 @@ jobs:
         if: inputs.ksu != false
         run: |
           cd kernel
-          bash "$GITHUB_WORKSPACE/builder/tools/setup-kernelsu-next.sh" --ref "${{ inputs.ksu_ref }}"
+          # ksu_ref is either a plain ref (all trees) or a per-branch
+          # map: branch:ref[,branch:ref...] (unmapped trees take the
+          # latest tag). Ref names cannot contain ':'; branch matches
+          # our_branch or fallback_branch.
+          WANT_REF="${{ inputs.ksu_ref }}"
+          REF=""
+          if [[ "$WANT_REF" == *:* ]]; then
+            OLDIFS=$IFS; IFS=,
+            for pair in $WANT_REF; do
+              b="${pair%%:*}"; r="${pair#*:}"
+              if [ "$b" = "${{ matrix.our_branch }}" ] || \
+                 [ "$b" = "${{ matrix.fallback_branch }}" ]; then
+                REF="$r"
+              fi
+            done
+            IFS=$OLDIFS
+          else
+            REF="$WANT_REF"
+          fi
+          bash "$GITHUB_WORKSPACE/builder/tools/setup-kernelsu-next.sh" --ref "$REF"
 
       # NoMount: same pattern (full clone, installer pins, symlink into
       # common/fs + Makefile/Kconfig hooks, .fragments/nomount.config).
