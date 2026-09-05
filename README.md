@@ -104,6 +104,9 @@ Secrets: `KERNEL_MIRROR_TOKEN` (push to the mirror), `OPENROUTER_API_KEY`
 
 ## License
 
+Every deviation from stock GKI is graded in [RISK.md](RISK.md)
+(kept current: grades change when builds prove otherwise).
+
 Mozilla Public License 2.0 — see [LICENSE](LICENSE).
 
 Kernel-side code (the `android-partition-guard` repo) stays GPL-2.0: it
