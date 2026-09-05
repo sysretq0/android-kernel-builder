@@ -233,6 +233,9 @@ jobs:
           bash "$GITHUB_WORKSPACE/builder/tools/drop-stale-module-outs.sh" \
             --tree common --kversion 6.12 --when-symbol CONFIG_CIFS \
             --drop fs/netfs/netfs.ko
+          bash "$GITHUB_WORKSPACE/builder/tools/drop-stale-module-outs.sh" \
+            --tree common --kversion 6.18 --when-symbol CONFIG_CIFS \
+            --drop fs/netfs/netfs.ko --drop lib/crypto/libarc4.ko
 
       # Debug: resolved values for fragment-touched symbols. Best effort
       # (never fails the build); ground truth when Kleaf's module/ABI
@@ -241,7 +244,9 @@ jobs:
         if: matrix.build_kind == 'kleaf'
         run: |
           cd kernel
-          tools/bazel build //common:kernel_aarch64_config 2>&1 | tail -3 || true
+          # Same fragment flag as the real build: without it this prints
+          # stock values (useless for our delta).
+          tools/bazel build --defconfig_fragment=//common:builder_fragments //common:kernel_aarch64_config 2>&1 | tail -3 || true
           echo "--- cquery outputs:"
           tools/bazel cquery --output=files //common:kernel_aarch64_config 2>&1 | head -10 || true
           echo "--- config dir:"

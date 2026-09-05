@@ -47,20 +47,20 @@ if [ -n "$WHEN" ]; then
     { echo "drop-stale-module-outs: $WHEN not forced =y, skipping"; exit 0; }
 fi
 
-BZL=""
-for cand in "$TREE/modules.bzl" "$TREE/common/modules.bzl"; do
-  [ -f "$cand" ] && BZL="$cand" && break
-done
-[ -n "$BZL" ] || { echo "drop-stale-module-outs: no modules.bzl in $TREE" >&2; exit 2; }
+BZL_CANDS=("$TREE/modules.bzl" "$TREE/bazel/modules_private.bzl" "$TREE/common/modules.bzl")
 
 for ko in "${DROPS[@]}"; do
   # Fixed-string match for grep, escaped match for sed (dots/slashes).
   lit="\"${ko}\","
   pat="\"$(printf '%s' "$ko" | sed 's/[\/.]/\\&/g')\","
-  grep -qF "$lit" "$BZL" || \
+  BZL=""
+  for cand in "${BZL_CANDS[@]}"; do
+    [ -f "$cand" ] && grep -qF "$lit" "$cand" && BZL="$cand" && break
+  done
+  [ -n "$BZL" ] || \
     { echo "drop-stale-module-outs: entry missing: $ko (upstream layout changed?)" >&2; exit 2; }
   sed -i "/$pat/d" "$BZL"
   grep -qF "$lit" "$BZL" && \
     { echo "drop-stale-module-outs: delete failed: $ko" >&2; exit 2; }
-  echo "drop-stale-module-outs: dropped $ko from $(basename "$BZL")"
+  echo "drop-stale-module-outs: dropped $ko from ${BZL#$TREE/}"
 done
