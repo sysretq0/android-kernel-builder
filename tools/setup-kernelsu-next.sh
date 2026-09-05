@@ -33,6 +33,21 @@ else
   bash "$NAME/kernel/setup.sh"
 fi
 
+# KSU bakes its version from git (rev-list --count + describe --tags), but
+# the Kleaf sandbox strips .git (Bazel excludes **/.*), so every Kleaf build
+# would bake KSU_VERSION=1 / tag v0.0.1 -- outside any range the manager app
+# accepts. Compute from the runner-side full clone and bake into the
+# fallback assignments (same 30000+ formula as Kbuild). build.sh is
+# unaffected (real .git present, fallback lines unused).
+KSU_COUNT=$(git -C "$NAME" rev-list --count HEAD)
+KSU_TAG=$(git -C "$NAME" describe --tags --abbrev=0)
+KSU_VERSION=$((30000 + KSU_COUNT))
+sed -i "s/^KSU_VERSION_FALLBACK := .*/KSU_VERSION_FALLBACK := $KSU_VERSION/" \
+  common/drivers/kernelsu/Kbuild
+sed -i "s/^KSU_VERSION_TAG_FALLBACK := .*/KSU_VERSION_TAG_FALLBACK := $KSU_TAG/" \
+  common/drivers/kernelsu/Kbuild
+echo "setup-kernelsu-next: baked version fallback $KSU_VERSION / $KSU_TAG"
+
 mkdir -p .fragments
 cat > .fragments/kernelsu.config <<'EOF'
 # KernelSU-Next integrated driver (written by setup-kernelsu-next.sh; only
