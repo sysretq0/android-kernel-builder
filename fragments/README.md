@@ -49,3 +49,9 @@ CONFIG_NR_CPUS=512
 `workflow_dispatch` input `extra_config`: comma-separated literal lines,
 e.g. `CONFIG_TCP_CONG_BBR=y,# CONFIG_DEBUG_INFO is not set`. Applied on top
 of the repo fragments for that run only.
+
+## Generated fragments (`.fragments/` in the build tree, not here)
+
+Steps that inject both source and symbols (e.g. KernelSU-Next: driver +
+`CONFIG_KSU`) write their fragment there at build time so the symbol can
+never be enabled without its source present. Picked up automatically.

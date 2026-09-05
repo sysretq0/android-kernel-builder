@@ -12,6 +12,13 @@ on:
       extra_config:
         description: "Inline CONFIG lines for this run only, comma-separated (e.g. 'CONFIG_TCP_CONG_BBR=y')"
         default: ""
+      ksu:
+        description: "Integrate pershoot/KernelSU-Next driver"
+        type: boolean
+        default: true
+      ksu_ref:
+        description: "KernelSU-Next tag/commit (default: latest tag)"
+        default: ""
   schedule:
     - cron: "0 5 * * 0" # weekly Sunday 05:00 UTC
 
@@ -113,6 +120,16 @@ jobs:
           cd kernel
           repo sync -c -j$(nproc) --no-tags --fail-fast
 
+      # KernelSU-Next (pershoot fork): full clone (.git preserved, the
+      # installer needs stash/pull/describe), pin via ksu_ref or latest tag,
+      # symlink into common/drivers + Kconfig/Makefile hooks. Writes
+      # .fragments/kernelsu.config, picked up by the Apply step below.
+      - name: Integrate KernelSU-Next
+        if: inputs.ksu != false
+        run: |
+          cd kernel
+          bash "$GITHUB_WORKSPACE/builder/tools/setup-kernelsu-next.sh" --ref "${{ inputs.ksu_ref }}"
+
       # Portable config injection (all eras): merge fragments/common/*.config
       # + fragments/<our_branch>/*.config (+ dispatch extra_config) into
       # arch/arm64/configs/gki_defconfig. Both build paths start from
@@ -128,6 +145,9 @@ jobs:
             ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}")
           [ -n "${{ inputs.extra_config }}" ] &&
             ARGS+=(--extra-config "${{ inputs.extra_config }}")
+          # Generated fragments (KSU): only present when that step ran.
+          [ "${{ inputs.ksu }}" != "false" ] && [ -d .fragments ] &&
+            ARGS+=(--fragment-dir .fragments)
           bash "$GITHUB_WORKSPACE/builder/tools/apply-fragments.sh" "${ARGS[@]}"
 
       # setlocalversion stamps -dirty on ANY uncommitted change at compile
