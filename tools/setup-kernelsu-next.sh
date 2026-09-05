@@ -41,6 +41,8 @@ fi
 # unaffected (real .git present, fallback lines unused).
 KSU_COUNT=$(git -C "$NAME" rev-list --count HEAD)
 KSU_TAG=$(git -C "$NAME" describe --tags --abbrev=0)
+KSU_SHA=$(git -C "$NAME" rev-parse --short HEAD)
+echo "setup-kernelsu-next: source at $KSU_SHA ($KSU_TAG)"
 KSU_VERSION=$((30000 + KSU_COUNT))
 KSU_KBUILD=common/drivers/kernelsu/Kbuild
 sed -i "s/^KSU_VERSION_FALLBACK := .*/KSU_VERSION_FALLBACK := $KSU_VERSION/" "$KSU_KBUILD"
