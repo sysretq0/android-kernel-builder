@@ -1,4 +1,0 @@
-# WireGuard secure VPN tunnel (in-tree since 5.6).
-# Usually already =y in gki_defconfig (then this is a no-op); stated here so
-# any tree with it off still gets it.
-CONFIG_WIREGUARD=y
