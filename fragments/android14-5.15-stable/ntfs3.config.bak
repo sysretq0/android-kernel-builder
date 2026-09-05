@@ -1,0 +1,8 @@
+# NTFS3 read/write (USB-OTG NTFS drives, mount -t ntfs3).
+# PARKED (.bak): activate after the current reintroduction queue.
+#
+# Per-branch only: fs/ntfs3 does not exist on 5.10, so a common/ copy
+# would fail check_defconfig there with an unknown symbol.
+# Audit (5.15+): NTFS3_FS tristate, selects NLS only, default n.
+# Kleaf module-outs re-verified at activation.
+CONFIG_NTFS3_FS=y

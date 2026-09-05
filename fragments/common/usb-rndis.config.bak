@@ -1,0 +1,10 @@
+# USB RNDIS gadget (tether the phone to a PC over USB).
+# PARKED (.bak): activate after the current reintroduction queue.
+#
+# Audit: USB_CONFIGFS_RNDIS is a bool depending on USB_CONFIGFS + NET
+# (both effective on GKI; ECM=y stock proves the framework). It selects
+# USB_U_ETHER + USB_F_RNDIS (default n, undeclared in 5.10-era module
+# lists). Kleaf module-outs re-verified at activation: if a tree declares
+# the function .ko, this stays .bak there.
+CONFIG_USB_CONFIGFS_RNDIS=y
+CONFIG_USB_CONFIGFS_ECM=y

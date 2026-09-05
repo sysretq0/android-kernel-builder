@@ -19,6 +19,14 @@ revisited whenever a build proves otherwise.
 | 8 | usb-serial (5.10 only, =y) | LOW | build.sh era has no module-outs check; 5.15+ stays =m (Kleaf staging) |
 | 9 | zswap family (per-tree, not 13-5.15/6.18) | MEDIUM | Core-mm adjacent but mature code; KMI-gated per tree, proven green 6/8 |
 
+## Parked (`.bak`, audited, activate after the reintroduction queue)
+
+| # | Fragment | Grade | Why |
+|---|---|---|---|
+| P1 | usb-rndis (RNDIS gadget, common) | LOW | Bool, deps effective (ECM=y proves framework); selects default-n, module-lists clean 5.10-era; Kleaf staging re-verified at activation |
+| P2 | ntfs3 per-branch (5.15+) | LOW | Tristate, selects NLS only, default n; per-branch because 5.10 lacks fs/ntfs3; Kleaf staging re-verified at activation |
+| P3 | ntsync 6.18-only | LOW | In-tree dep-less tristate; 6.12 BROKEN-gated (skipped), ≤6.6 absent (backport rejected) |
+
 ## Out-of-tree sources
 
 | # | Integration | Grade | Why |

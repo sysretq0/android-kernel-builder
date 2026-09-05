@@ -1,0 +1,9 @@
+# NTSYNC (Windows NT sync primitives, Wine/games compat).
+# PARKED (.bak): activate after the current reintroduction queue.
+#
+# 6.18-only: in-tree dep-less tristate (/dev/ntsync, mount-gated).
+# 6.12 carries the driver but depends on BROKEN — not selectable, no
+# fragment there. 6.6 and below lack it entirely (backport rejected:
+# out-of-tree driver, review burden).
+# Kleaf module-outs re-verified at activation.
+CONFIG_NTSYNC=y
