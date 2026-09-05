@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 5.10 / 5.15: legacy build.sh (build/ project)
+          # 5.10: legacy build.sh only (no Kleaf in manifest)
           - our_branch: android12-5.10-stable
             fallback_branch: android12-5.10-lts
             manifest_branch: common-android12-5.10-lts
@@ -28,15 +28,15 @@ jobs:
             fallback_branch: android13-5.10-lts
             manifest_branch: common-android13-5.10-lts
             build_kind: build_sh
+          # 5.15+: Kleaf available (tools/bazel linkfile in manifest), prefer it
           - our_branch: android13-5.15-stable
             fallback_branch: android13-5.15-lts
             manifest_branch: common-android13-5.15-lts
-            build_kind: build_sh
+            build_kind: kleaf
           - our_branch: android14-5.15-stable
             fallback_branch: android14-5.15-lts
             manifest_branch: common-android14-5.15-lts
-            build_kind: build_sh
-          # 6.1: transitional, use Bazel
+            build_kind: kleaf
           - our_branch: android14-6.1-stable
             fallback_branch: android14-6.1-lts
             manifest_branch: common-android14-6.1-lts
