@@ -34,7 +34,11 @@ Kconfig fragment system. Flashable AnyKernel3 zips land on
 
 Portable Kconfig applied on top of stock `gki_defconfig`. Rules: blank
 lines, `#` comments, `CONFIG_X=value`, or `# CONFIG_X is not set`
-(a real statement — the staging scripts preserve it).
+(a real statement — the staging scripts preserve it). Full-line comments
+and blanks are accepted but stripped at stage time (rationale lives in
+git); each staged block gets a `# fragment: <path>` provenance marker,
+and trailing annotations on `CONFIG_` lines (e.g. `# nocheck`) pass
+through untouched.
 
 - `common/` — every tree: `bbr` `cake` `cifs` `ipset` `metamodule`
   `usb-mass-storage` `wireguard` `zswap`
