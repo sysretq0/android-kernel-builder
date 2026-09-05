@@ -40,7 +40,7 @@ jobs:
     timeout-minutes: 360
     env:
       UPSTREAM_URL: https://android.googlesource.com/kernel/common
-      DEST_REPO: sysretq0/android-kernel-common-lts
+      DEST_REPO: sysretq0/android-kernel-common
       BRANCH: ${{ matrix.branch }}
     steps:
       - name: Mirror one branch (full history, fast-forward only, chunked)
@@ -150,7 +150,7 @@ jobs:
     timeout-minutes: 120
     env:
       UPSTREAM_URL: https://android.googlesource.com/kernel/common
-      DEST_REPO: sysretq0/android-kernel-common-lts
+      DEST_REPO: sysretq0/android-kernel-common
     steps:
       - name: Mirror reachable tags only (new tags, no --force)
         env:
@@ -205,4 +205,104 @@ jobs:
           if [ -s specs.txt ]; then
             xargs -a specs.txt -n 200 git push --verbose dest
           fi
+          echo done
+
+  merge-stable:
+    needs: [sync-branch]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lts: android12-5.10-lts
+            stable: linux-5.10.y
+          - lts: android13-5.10-lts
+            stable: linux-5.10.y
+          - lts: android13-5.15-lts
+            stable: linux-5.15.y
+          - lts: android14-5.15-lts
+            stable: linux-5.15.y
+          - lts: android14-6.1-lts
+            stable: linux-6.1.y
+          - lts: android15-6.6-lts
+            stable: linux-6.6.y
+          - lts: android16-6.12-lts
+            stable: linux-6.12.y
+          - lts: android17-6.18-lts
+            stable: linux-6.18.y
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      UPSTREAM_URL: https://android.googlesource.com/kernel/common
+      STABLE_URL: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git
+      DEST_REPO: sysretq0/android-kernel-common
+      LTS: ${{ matrix.lts }}
+      STABLE: ${{ matrix.stable }}
+    steps:
+      - name: Merge stable into LTS, force-with-lease (rebuilt, no own history)
+        env:
+          DEST_TOKEN: ${{ secrets.KERNEL_MIRROR_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEST_TOKEN:-}" ]; then
+            echo "::error::Missing secret KERNEL_MIRROR_TOKEN."
+            exit 1
+          fi
+          OUT="${LTS/-lts/-stable}"
+          echo "LTS=$LTS STABLE=$STABLE OUT=$OUT"
+
+          # Skip cleanly if this .y line doesn't exist yet (e.g. linux-6.18.y).
+          if ! git ls-remote "$STABLE_URL" "refs/heads/$STABLE" | grep -q .; then
+            echo "::warning::$STABLE not found in stable tree — skipping $OUT."
+            exit 0
+          fi
+
+          rm -rf work && mkdir work && cd work
+          git init -q
+          git remote add upstream "$UPSTREAM_URL"
+          git remote add stable "$STABLE_URL"
+          git remote add dest "https://x-access-token:${DEST_TOKEN}@github.com/${DEST_REPO}.git"
+
+          git fetch --no-tags upstream "refs/heads/$LTS:refs/remotes/upstream/$LTS"
+          git fetch --no-tags stable "refs/heads/$STABLE:refs/remotes/stable/$STABLE"
+          LTS_TIP=$(git rev-parse "refs/remotes/upstream/$LTS")
+          STABLE_TIP=$(git rev-parse "refs/remotes/stable/$STABLE")
+          echo "LTS tip: $LTS_TIP"
+          echo "stable tip: $STABLE_TIP"
+
+          # Lease base: current OUT ref on dest (empty = expect nonexistent).
+          OLD=""
+          if git fetch dest "refs/heads/$OUT:refs/remotes/dest/$OUT" 2>/dev/null; then
+            OLD=$(git rev-parse "refs/remotes/dest/$OUT")
+            echo "dest $OUT now at $OLD"
+          else
+            echo "dest $OUT does not exist yet"
+          fi
+
+          git -c user.name="kernel-mirror" -c user.email="kernel-mirror@users.noreply.github.com" checkout -q "$LTS_TIP"
+          if git -c user.name="kernel-mirror" -c user.email="kernel-mirror@users.noreply.github.com" merge --no-ff --no-edit \
+              -m "Merge $STABLE ($STABLE_TIP) into $LTS ($LTS_TIP)" "$STABLE_TIP"; then
+            echo "merged clean"
+          else
+            echo "::error::merge conflict $STABLE into $LTS — aborting, no push. Resolve manually."
+            git merge --abort || true
+            exit 1
+          fi
+          MERGED=$(git rev-parse HEAD)
+          echo "merged: $MERGED"
+
+          if [ -n "$OLD" ] && [ "$OLD" = "$MERGED" ]; then
+            echo "already up to date"
+            exit 0
+          fi
+
+          # Rebuilt every run: -stable carries no history of its own, so this
+          # always needs force — but strictly with lease (fails if someone
+          # moved the ref since we fetched OLD). Distinct ref per matrix job.
+          if [ -n "$OLD" ]; then
+            LEASE="--force-with-lease=refs/heads/$OUT:$OLD"
+          else
+            LEASE="--force-with-lease=refs/heads/$OUT:"
+          fi
+          # shellcheck disable=SC2086
+          git push --verbose $LEASE dest "HEAD:refs/heads/$OUT"
           echo done
