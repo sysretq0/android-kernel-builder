@@ -91,26 +91,57 @@ jobs:
           # fast-forward of the previous. No '+' anywhere. Each chunk retried
           # 3x with backoff for transient 500s; a resume just continues the
           # range on the next run (dest tip stays a valid ancestor).
-          git rev-list --first-parent --reverse "$RANGE" | awk -v n=$BATCH 'NR % n == 0' > batches.txt
-          echo "$TIP" >> batches.txt
-          total=$(wc -l < batches.txt)
-          i=0
-          while read -r S; do
-            i=$((i + 1))
-            attempt=0
-            while [ "$attempt" -lt 3 ]; do
-              attempt=$((attempt + 1))
-              echo "[$i/$total attempt $attempt] $S"
-              if git push dest "$S:refs/heads/$B"; then
-                break
+          git rev-list --first-parent --reverse "$RANGE" > all.txt
+          TOTAL_LINES=$(wc -l < all.txt)
+          awk -v n=$BATCH 'NR % n == 0 { print NR }' all.txt > idx.txt
+          echo "$TOTAL_LINES" >> idx.txt
+          sort -nu idx.txt -o idx.txt
+
+          push_one() {
+            s="$1"
+            # Idempotent: already-contained SHAs are a skip, not a failure.
+            # (Keeps re-walks and resume-from-partial safe under no-force.)
+            if git rev-parse --verify -q "refs/remotes/dest/$B" >/dev/null; then
+              if git merge-base --is-ancestor "$s" "refs/remotes/dest/$B"; then
+                echo "  skip $s (already on dest)"
+                return 0
               fi
-              if [ "$attempt" -eq 3 ]; then
-                echo "::error::push failed 3x for $S"
-                exit 1
+            fi
+            a=0
+            while [ "$a" -lt 3 ]; do
+              a=$((a + 1))
+              echo "  push $s (attempt $a)"
+              if git push dest "$s:refs/heads/$B"; then
+                git update-ref "refs/remotes/dest/$B" "$s"
+                return 0
               fi
-              sleep $((attempt * 60))
+              if [ "$a" -lt 3 ]; then sleep $((a * 60)); fi
             done
-          done < batches.txt
+            return 1
+          }
+
+          push_window() { # $1 start_line $2 end_line $3 step
+            l=$1; e=$2; st=$3
+            while [ "$l" -lt "$e" ]; do
+              l=$((l + st)); if [ "$l" -gt "$e" ]; then l=$e; fi
+              s=$(sed -n "${l}p" all.txt)
+              if ! push_one "$s"; then return 1; fi
+            done
+            return 0
+          }
+
+          prev=0
+          while read -r idx; do
+            s=$(sed -n "${idx}p" all.txt)
+            echo "== chunk @ line $idx/$TOTAL_LINES $s"
+            if push_one "$s"; then prev=$idx; continue; fi
+            echo "chunk failed, subdividing $prev..$idx at 2000-commit granularity"
+            if push_window "$prev" "$idx" 2000; then prev=$idx; continue; fi
+            echo "still failing, subdividing $prev..$idx at 200-commit granularity"
+            if push_window "$prev" "$idx" 200; then prev=$idx; continue; fi
+            echo "::error::unpushable window lines $prev..$idx"
+            exit 1
+          done < idx.txt
           echo "done $B = $(git ls-remote dest "refs/heads/$B")"
 
   publish-tags:
