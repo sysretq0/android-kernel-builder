@@ -377,6 +377,11 @@ jobs:
           pattern: anykernel-*
           path: zips
           merge-multiple: true
+      - name: Checkout builder (template + HEAD subject)
+        uses: actions/checkout@v4
+        with:
+          path: builder
+          fetch-depth: 1
       - name: Publish release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -413,9 +418,31 @@ jobs:
             echo "- Build logs: $RUN_URL"
             echo "- Risk register: [RISK.md](https://github.com/${{ github.repository }}/blob/main/RISK.md)"
           } > release-notes.md
+          # Telegram post: fill docs/TELEGRAM_RELEASE.md from this build.
+          # Release-only (this step), uploaded as an asset + printed for copy-paste.
+          HL=$(git -C "$GITHUB_WORKSPACE/builder" log -1 --format=%s 2>/dev/null || echo "New build")
+          HLESC=$(printf '%s' "$HL" | sed 's/[&|\\/]/\\&/g')
+          printf '%s\n' "${files[@]##*/}" > /tmp/tg_files.txt
+          {
+            [ "${{ inputs.ksu }}" = "true" ] && echo "• KernelSU-Next (\`${{ inputs.ksu_ref || 'latest tag' }}\`)"
+            [ "${{ inputs.nomount }}" = "true" ] && echo "• NoMount VFS redirection"
+            [ "${{ inputs.guard }}" = "true" ] && echo "• Partition Guard LSM"
+            echo "• Fragments: $FRAGS"
+          } > /tmp/tg_features.txt
+          sed -e "s|{KERNEL NAME}|GKI Kernel|" \
+              -e "s|{VERSION}|$TAG|" \
+              -e "s|{release URL}|https://github.com/${{ github.repository }}/releases/tag/$TAG|" \
+              -e "s|{how to flash}|Flash the zip matching your branch in recovery or KernelSU manager|" \
+              -e "s|{backup warning}|Back up boot first — no auto-backup|" \
+              -e "/• {change 1}/c\\• $HLESC" \
+              -e "/• {change 2}/d" \
+              -e "/{one file per line}/r /tmp/tg_files.txt" -e "/{one file per line}/d" \
+              -e "/• {feature 1}/r /tmp/tg_features.txt" -e "/• {feature 1}/d" -e "/• {feature 2}/d" \
+              "$GITHUB_WORKSPACE/builder/docs/TELEGRAM_RELEASE.md" > telegram-post.txt
+          echo "--- telegram-post.txt ---"; cat telegram-post.txt; echo "--- end ---"
           if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            gh release upload "$TAG" "${files[@]}" --clobber --repo "${{ github.repository }}"
+            gh release upload "$TAG" "${files[@]}" telegram-post.txt --clobber --repo "${{ github.repository }}"
           else
-            gh release create "$TAG" "${files[@]}" --prerelease \
+            gh release create "$TAG" "${files[@]}" telegram-post.txt --prerelease \
               --title "$TAG" --notes-file release-notes.md --repo "${{ github.repository }}"
           fi

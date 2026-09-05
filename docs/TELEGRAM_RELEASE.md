@@ -19,7 +19,3 @@
 
 <b>⬇️ Download</b>
 {release URL}
-
---
-Fill {…}, paste as-is (HTML parse mode). 1–3 highlight lines max —
-full details live on the GitHub release page.
