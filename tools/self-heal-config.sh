@@ -69,6 +69,23 @@ run_make() { # <dir> <target>
     ( cd "$ROOT_DIR/$KERNEL_DIR" && make "${MAKE_ARCH_ARGS[@]}" O="${dir}" "${target}" )
 }
 
+# commit_tree: stage + commit ANY leftover changes in the kernel tree so
+# scripts/setlocalversion (and Kleaf scmversion) do not stamp a -dirty
+# suffix. Non-fatal: a failed commit only costs the dirty marker.
+commit_tree() { # <message>
+    local msg=$1 tree="$ROOT_DIR/$KERNEL_DIR"
+    [ -d "$tree/.git" ] || { warn "kernel tree is not a git repo; leaving uncommitted (version may carry -dirty)"; return 0; }
+    git -C "$tree" add -A 2>/dev/null || return 0
+    git -C "$tree" diff --cached --quiet 2>/dev/null && { info "tree already clean"; return 0; }
+    if git -C "$tree" -c user.name="${GIT_BUILDER_NAME:-android-kernel-builder}" \
+            -c user.email="${GIT_BUILDER_EMAIL:-builder@localhost}" \
+            commit -q -m "$msg" 2>/dev/null; then
+        info "committed tree ($msg; kernel version stays clean)"
+    else
+        warn "could not commit tree; kernel version may carry -dirty"
+    fi
+}
+
 # map ARCH to the configs subdir (same logic as check_defconfig in _setup_env.sh)
 cfg_arch=$ARCH
 case "$cfg_arch" in
@@ -99,6 +116,7 @@ CANONICAL=$SCRATCH/defconfig
 # ---------------------------------------------------------------------------
 if cmp -s "$COMMITTED" "$CANONICAL"; then
     info "already healthy: $DEFCONFIG matches canonical savedefconfig"
+    commit_tree "builder: commit tree before build (avoid -dirty)"
     exit 0
 fi
 
@@ -109,6 +127,7 @@ if diff -q \
     <(grep -E '^CONFIG_[A-Za-z0-9_]+=' "$CANONICAL" | sort) \
     <(grep -E '^CONFIG_[A-Za-z0-9_]+=' "$COMMITTED" | sort) >/dev/null 2>&1; then
     info "normalization detected: $DEFCONFIG differs only in symbol ordering, effective config identical; no repair needed"
+    commit_tree "builder: commit tree before build (avoid -dirty)"
     exit 0
 fi
 
@@ -142,18 +161,7 @@ for i in 1 2 3 4 5; do
     if cmp -s "${OUT_DIR}/defconfig" "$CANONICAL"; then
         info "repair verified: regenerated config converged to canonical savedefconfig"
         rm -f "$BACKUP"
-        # Commit the repaired defconfig into the local kernel tree so the
-        # version string does not gain a -dirty suffix. Non-fatal: a non-git
-        # tree or a failed commit only costs the dirty marker.
-        if [ -d "$ROOT_DIR/$KERNEL_DIR/.git" ] && \
-           git -C "$ROOT_DIR/$KERNEL_DIR" -c user.name="${GIT_BUILDER_NAME:-CloudFox Kernel Builder}" \
-               -c user.email="${GIT_BUILDER_EMAIL:-builder@localhost}" \
-               commit -q --only -m "cloudfox: self-heal $DEFCONFIG to canonical savedefconfig" -- \
-               "arch/$cfg_arch/configs/$DEFCONFIG" 2>/dev/null; then
-            info "committed repaired $DEFCONFIG (kernel version stays clean)"
-        else
-            warn "could not commit repaired $DEFCONFIG; kernel version may carry -dirty"
-        fi
+        commit_tree "builder: self-heal $DEFCONFIG to canonical savedefconfig"
         exit 0
     fi
     info "iteration $i: regenerated config not yet stable; re-deriving"

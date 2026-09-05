@@ -130,6 +130,21 @@ jobs:
             ARGS+=(--extra-config "${{ inputs.extra_config }}")
           bash "$GITHUB_WORKSPACE/builder/tools/apply-fragments.sh" "${ARGS[@]}"
 
+      # setlocalversion stamps -dirty on ANY uncommitted change at compile
+      # time, so commit the whole tree before building. Self-heal does the
+      # same at its end (build.sh path); this covers Kleaf + everything else.
+      - name: Commit tree (avoid -dirty version)
+        run: |
+          cd kernel
+          if [ -d common/.git ]; then
+            git -C common add -A 2>/dev/null || true
+            git -C common diff --cached --quiet 2>/dev/null || \
+              git -C common -c user.name="android-kernel-builder" \
+                -c user.email="builder@localhost" \
+                commit -qm "builder: commit tree before build (avoid -dirty)" || true
+            git -C common status --short | head -5
+          fi
+
       # build.sh only: check_defconfig requires the committed defconfig to
       # byte-match canonical savedefconfig, so fragment injection must be
       # followed by the self-heal stage (vendored from CloudFox) as
