@@ -90,7 +90,7 @@ jobs:
           mkdir -p kernel && cd kernel
           repo init -u https://android.googlesource.com/kernel/manifest -b "${{ matrix.manifest_branch }}" --depth=1
           mkdir -p .repo/local_manifests
-          sed "s/REVISION/${{ steps.rev.outputs.rev }}/" "$GITHUB_WORKSPACE/builder/manifests/vendor-common.xml.template" > .repo/local_manifests/vendor-common.xml
+          sed "s/__REVISION__/${{ steps.rev.outputs.rev }}/" "$GITHUB_WORKSPACE/builder/manifests/vendor-common.xml.template" > .repo/local_manifests/vendor-common.xml
           cat .repo/local_manifests/vendor-common.xml
 
       - name: repo sync (minimal)

@@ -4,6 +4,6 @@
      All other projects (build/, prebuilts, modules) still come from googlesource. -->
 <manifest>
   <remote name="github-common" fetch="https://github.com/sysretq0" />
-  <!-- REVISION is rewritten by the workflow to the matrix `our_revision` -->
-  <project path="common" name="android-kernel-common" remote="github-common" revision="REVISION" />
+  <!-- __REVISION__ is rewritten by the workflow to the matrix `our_revision` -->
+  <project path="common" name="android-kernel-common" remote="github-common" revision="__REVISION__" override="true" />
 </manifest>
