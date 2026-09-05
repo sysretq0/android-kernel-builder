@@ -169,6 +169,18 @@ jobs:
           done
           ls -la "$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}/"
 
+      - name: Pack AnyKernel3 zip
+        run: |
+          OUT="$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}"
+          IMG=""
+          for cand in Image.lz4 Image.gz Image; do
+            [ -f "$OUT/$cand" ] && IMG="$OUT/$cand" && break
+          done
+          [ -n "$IMG" ] || { echo "no kernel image for AK3 zip; skipping"; exit 0; }
+          bash "$GITHUB_WORKSPACE/builder/tools/pack-anykernel.sh" \
+            --image "$IMG" --rev "${{ steps.rev.outputs.rev }}" \
+            --out "$OUT/anykernel-${{ steps.rev.outputs.rev }}.zip"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
