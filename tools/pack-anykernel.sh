@@ -3,7 +3,10 @@
 #
 # Usage:
 #   pack-anykernel.sh --image <Image.lz4|Image.gz|Image> --rev <name>
-#     [--out <zip path>] [--akdir <anykernel/ dir>]
+#     [--features <"A B + x y">] [--out <zip path>] [--akdir <anykernel/ dir>]
+#
+# --features stamps @FEATURES@ (no / or | -- sed-delimiter-hostile); date
+# stamps @DATE@ automatically.
 #
 # Stages META-INF + tools (pristine AK3 backend, magiskboot refreshed)
 # with our anykernel.sh (kernel.string stamped with --rev), banner, a
@@ -12,13 +15,14 @@
 # device-generic.
 set -euo pipefail
 
-IMAGE=""; REV=""; OUT=""; AKDIR=""
+IMAGE=""; REV=""; OUT=""; AKDIR=""; FEATURES="stock GKI"
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --image) IMAGE="$2"; shift 2 ;;
     --rev) REV="$2"; shift 2 ;;
+    --features) FEATURES="$2"; shift 2 ;;
     --out) OUT="$2"; shift 2 ;;
     --akdir) AKDIR="$2"; shift 2 ;;
     *) echo "pack-anykernel: unknown arg: $1" >&2; exit 2 ;;
@@ -41,7 +45,9 @@ trap 'rm -rf "$stage"' EXIT
 
 cp -a "$AKDIR/META-INF" "$AKDIR/tools" "$stage/"
 cp -a "$AKDIR/anykernel.sh" "$AKDIR/banner" "$stage/"
-sed -i "s/@REV@/$REV/g" "$stage/anykernel.sh"
+DATE=$(date -u +%Y-%m-%d)
+sed -i "s|@REV@|$REV|g; s|@FEATURES@|$FEATURES|g; s|@DATE@|$DATE|g" "$stage/anykernel.sh"
+grep -q "@REV@\|@FEATURES@\|@DATE@" "$stage/anykernel.sh" && { echo "pack-anykernel: unstamped placeholder left" >&2; exit 1; }
 cp -a "$IMAGE" "$stage/"
 cat > "$stage/version" <<EOF
 $REV

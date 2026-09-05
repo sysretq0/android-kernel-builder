@@ -42,8 +42,21 @@ PATCH_VBMETA_FLAG=auto;
 
 # boot install
 ui_print " ";
-ui_print "sysretq0 GKI: replacing kernel, keeping stock ramdisk...";
+ui_print "=====================================";
+ui_print " sysretq0 GKI @REV@";
+ui_print " @FEATURES@";
+ui_print " Built @DATE@";
+ui_print "=====================================";
+model=$(getprop ro.product.model 2>/dev/null);
+[ -n "$model" ] || model="unknown device";
+slot=$(getprop ro.boot.slot_suffix 2>/dev/null);
+[ -n "$slot" ] || slot=$(grep -o 'androidboot.slot_suffix=[^ ]*' /proc/cmdline 2>/dev/null | cut -d= -f2);
+[ -n "$slot" ] || slot="a-only";
+ui_print " Device: $model | Slot: $slot";
+ui_print " Unpacking boot image...";
 split_boot; # skip ramdisk unpack (no ramdisk mods; switch to dump_boot if you add any)
 
+ui_print " Flashing new kernel...";
 flash_boot; # skip repack (pairs with split_boot; switch to write_boot with dump_boot)
+ui_print " Done - reboot to system.";
 ## end boot install
