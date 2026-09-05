@@ -91,6 +91,8 @@ Secrets: `KERNEL_MIRROR_TOKEN` (push to the mirror), `OPENROUTER_API_KEY`
 - `pershoot/KernelSU-Next`, `maxsteeel/nomount` — upstream projects,
   integrated unmodified (values baked around them, warnings preserved).
 
+*Built with assistance from muse-spark-1.3.*
+
 ## License
 
 Mozilla Public License 2.0 — see [LICENSE](LICENSE).
