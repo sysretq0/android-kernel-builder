@@ -28,11 +28,11 @@ jobs:
             fallback_branch: android13-5.10-lts
             manifest_branch: common-android13-5.10-lts
             build_kind: build_sh
-          # 5.15+: Kleaf available (tools/bazel linkfile in manifest), prefer it
+          # 5.10 / android13-5.15: era-default build.sh; android14-5.15+: Kleaf
           - our_branch: android13-5.15-stable
             fallback_branch: android13-5.15-lts
             manifest_branch: common-android13-5.15-lts
-            build_kind: kleaf
+            build_kind: build_sh
           - our_branch: android14-5.15-stable
             fallback_branch: android14-5.15-lts
             manifest_branch: common-android14-5.15-lts
