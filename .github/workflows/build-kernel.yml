@@ -210,12 +210,15 @@ jobs:
         if: matrix.build_kind == 'kleaf'
         run: |
           cd kernel
-          tools/bazel build //common:kernel_aarch64_config >/dev/null 2>&1 || true
-          CFG=$(find bazel-bin -name ".config" -path "*kernel_aarch64_config*" 2>/dev/null | head -1)
+          tools/bazel build //common:kernel_aarch64_config 2>&1 | tail -3 || true
+          CFG=$(tools/bazel cquery --output=files //common:kernel_aarch64_config 2>/dev/null | grep -m1 '\.config$' || true)
+          [ -n "$CFG" ] || CFG=$(find bazel-bin -name ".config" 2>/dev/null | head -1)
           if [ -n "$CFG" ]; then
+            echo "dump-resolved-config: using $CFG"
             grep -E "^(# )?CONFIG_(ZRAM|ZSMALLOC|ZSWAP|ZBUD|FRONTSWAP|NETFS_SUPPORT|CIFS|CIFS_XATTR|CIFS_POSIX|TCP_CONG_BBR|TCP_CONG_BIC|TCP_CONG_WESTWOOD|TCP_CONG_HTCP|TCP_CONG_CUBIC|TCP_CONG_ADVANCED|KPROBES|EXT4_FS|NOMOUNT|PARTITION_GUARD|OVERLAY_FS|WIREGUARD|CAKE)(=| is not set)" "$CFG" | head -40
           else
-            echo "dump-resolved-config: .config not found under bazel-bin"
+            echo "dump-resolved-config: .config not found; bazel-bin layout:"
+            ls bazel-bin/common/ 2>/dev/null | head -20 || echo "(no bazel-bin/common)"
           fi
 
       # setlocalversion stamps -dirty on ANY uncommitted change at compile
