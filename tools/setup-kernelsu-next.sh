@@ -45,16 +45,12 @@ KSU_VERSION=$((30000 + KSU_COUNT))
 KSU_KBUILD=common/drivers/kernelsu/Kbuild
 sed -i "s/^KSU_VERSION_FALLBACK := .*/KSU_VERSION_FALLBACK := $KSU_VERSION/" "$KSU_KBUILD"
 sed -i "s/^KSU_VERSION_TAG_FALLBACK := .*/KSU_VERSION_TAG_FALLBACK := $KSU_TAG/" "$KSU_KBUILD"
-# The sandbox can never have .git (stripped by design), so the "make it a
-# git repo" warnings are pure noise once values are baked: demote them to
-# info. Verified below -- if upstream rewords either line, fail fast here
-# rather than silently shipping version 1/v0.0.1.
-sed -i 's/^$(warning "KSU_GIT_VERSION not defined!.*$/$(info -- KSU_GIT_VERSION: using baked value)/' "$KSU_KBUILD"
-sed -i 's/^$(warning "KSU_VERSION_TAG not defined!.*$/$(info -- KSU_VERSION_TAG: using baked value)/' "$KSU_KBUILD"
+# The sandbox can never have .git (stripped by design), so the warnings
+# below stay as upstream wrote them -- values are baked, behavior preserved.
+# Verified: if upstream rewords the fallback lines, fail fast here rather
+# than silently shipping version 1/v0.0.1.
 grep -q "^KSU_VERSION_FALLBACK := $KSU_VERSION$" "$KSU_KBUILD" && \
-grep -q "^KSU_VERSION_TAG_FALLBACK := $KSU_TAG$" "$KSU_KBUILD" && \
-grep -q "KSU_GIT_VERSION: using baked value" "$KSU_KBUILD" && \
-grep -q "KSU_VERSION_TAG: using baked value" "$KSU_KBUILD" || \
+grep -q "^KSU_VERSION_TAG_FALLBACK := $KSU_TAG$" "$KSU_KBUILD" || \
   { echo "setup-kernelsu-next: version bake verification FAILED" >&2; exit 2; }
 echo "setup-kernelsu-next: baked version fallback $KSU_VERSION / $KSU_TAG"
 
