@@ -41,10 +41,12 @@ and trailing annotations on `CONFIG_` lines (e.g. `# nocheck`) pass
 through untouched.
 
 - `common/` — every tree: `bbr` `cake` `cifs` `ipset` `metamodule`
-  `usb-mass-storage` `wireguard` `zswap`
+  `usb-mass-storage` `wireguard` (`zswap` excluded: KMI-blocked, see below)
 - Per-branch dirs (e.g. `android12-5.10-stable/`) — symbols deleted or
-  renamed upstream: `frontswap` (gone 6.6+), `zbud` (gone 6.18),
-  `usb-serial` (5.10-only; `=y` breaks Kleaf module staging on 5.15+)
+  renamed upstream: `usb-serial` (5.10-only; `=y` breaks Kleaf module
+  staging on 5.15+). `zswap` lives ONLY in `android15-6.6-stable/`:
+  `ZSWAP` selects `ZPOOL`, whose exports sit outside the KMI allowlist
+  on 5.10/5.15/6.1 and fail the strict ABI check there.
 - Generated `.fragments/` (KSU/NoMount/guard) ride the same pipeline
 
 Era handling: `build.sh` trees bake fragments into the defconfig +
