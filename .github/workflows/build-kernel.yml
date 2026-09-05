@@ -36,6 +36,12 @@ on:
   schedule:
     - cron: "0 5 * * 0" # weekly Sunday 05:00 UTC
 
+# Release publishing needs contents:write; artifact up/down needs
+# actions:write (declaring any scope narrows the rest, so both explicit).
+permissions:
+  actions: write
+  contents: write
+
 jobs:
   # Pre-filter the build matrix so only requested branches spawn jobs.
   # Empty input (schedule) or 'all' = build everything.
@@ -263,13 +269,53 @@ jobs:
             [ -f "$OUT/$cand" ] && IMG="$OUT/$cand" && break
           done
           [ -n "$IMG" ] || { echo "no kernel image for AK3 zip; skipping"; exit 0; }
+          mkdir -p "$GITHUB_WORKSPACE/release"
           bash "$GITHUB_WORKSPACE/builder/tools/pack-anykernel.sh" \
             --image "$IMG" --rev "${{ steps.rev.outputs.rev }}" \
-            --out "$OUT/anykernel-${{ steps.rev.outputs.rev }}.zip"
+            --out "$GITHUB_WORKSPACE/release/anykernel-${{ steps.rev.outputs.rev }}.zip"
 
+      # Raw outputs (Image/vmlinux/System.map) stay here; the AK3 zip
+      # lives in release/ and rides its own artifact to the release job.
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: kernel-${{ steps.rev.outputs.rev }}
           path: out-${{ steps.rev.outputs.rev }}/
           if-no-files-found: warn
+
+      - name: Upload AnyKernel3 zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: anykernel-${{ steps.rev.outputs.rev }}
+          path: release/
+          if-no-files-found: ignore
+
+  # One release per run: gathers every AnyKernel3 zip (partial success
+  # still publishes what built). Raw Image/vmlinux/System.map stay as
+  # run artifacts only. Re-runs reuse the same tag (upload --clobber).
+  release:
+    needs: build
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch AnyKernel3 zips
+        uses: actions/download-artifact@v4
+        with:
+          pattern: anykernel-*
+          path: zips
+          merge-multiple: true
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          shopt -s nullglob
+          files=(zips/*.zip)
+          [ "${#files[@]}" -gt 0 ] || { echo "no AnyKernel3 zips; skipping release"; exit 0; }
+          TAG="kernel-build-r${{ github.run_number }}"
+          NOTES="Branch: ${{ inputs.branch || 'all' }} | KSU: ${{ inputs.ksu }} | NoMount: ${{ inputs.nomount }} | Guard: ${{ inputs.guard }} | run ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${files[@]}" --clobber --repo "${{ github.repository }}"
+          else
+            gh release create "$TAG" "${files[@]}" --prerelease \
+              --title "$TAG" --notes "$NOTES" --repo "${{ github.repository }}"
+          fi
