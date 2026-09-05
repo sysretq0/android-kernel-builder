@@ -5,10 +5,11 @@
 #   pack-anykernel.sh --image <Image.lz4|Image.gz|Image> --rev <name>
 #     [--out <zip path>] [--akdir <anykernel/ dir>]
 #
-# Stages META-INF + tools (pristine AK3 backend) with our anykernel.sh
-# (kernel.string stamped with --rev), banner, a generated version file, and
-# the kernel image, then zips it. AK3 auto-detects the image by filename and
-# the target boot partition (BLOCK=auto), so the zip is device-generic.
+# Stages META-INF + tools (pristine AK3 backend, magiskboot refreshed)
+# with our anykernel.sh (kernel.string stamped with --rev), banner, a
+# generated version file, and the raw kernel image, then zips it. AK3
+# flashes to the boot partition (BLOCK=boot, slot-aware), so the zip is
+# device-generic.
 set -euo pipefail
 
 IMAGE=""; REV=""; OUT=""; AKDIR=""

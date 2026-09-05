@@ -36,7 +36,7 @@ revisited whenever a build proves otherwise.
 | 15 | Makefile/Kconfig hooks + LSM list append | LOW | Additive, idempotent, verified present |
 | 16 | Tree commit before compile (anti `-dirty`) | LOW | No semantic change, version string only |
 | 17 | magiskboot v30.7 (AK3 tools refresh) | LOW | Upstream binary, runs at flash time only |
-| 18 | AK3 template + raw `Image` | LOW | `BLOCK=auto` device-generic; raw image (compressed panics at decompress) |
+| 18 | AK3 template + raw `Image` | LOW | `BLOCK=boot` (kernel always in boot on userspace) slot-aware; raw image (compressed panics at decompress) |
 
 ## Process risks
 

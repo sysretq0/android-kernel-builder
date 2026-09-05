@@ -25,11 +25,14 @@ supported.vendorpatchlevels=
 
 ### AnyKernel install
 # GKI generic: no device/version checks (do.devicecheck=0), no ramdisk mods,
-# no modules. Kernel blob (Image.lz4 / Image.gz / Image) is swapped into the
-# stock boot image, everything else is preserved.
+# no modules. Kernel blob (raw Image -- compressed variants panic at
+# decompress) is swapped into the stock boot image, everything else is
+# preserved.
 
 # boot shell variables
-BLOCK=auto;
+# BLOCK=boot (not auto): on userspace devices the kernel always lives in
+# the boot partition; slot suffix still resolves via IS_SLOT_DEVICE.
+BLOCK=boot;
 IS_SLOT_DEVICE=auto;
 RAMDISK_COMPRESSION=auto;
 PATCH_VBMETA_FLAG=auto;
