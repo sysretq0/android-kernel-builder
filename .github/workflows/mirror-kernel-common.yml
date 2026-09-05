@@ -15,10 +15,17 @@ on:
     - cron: "30 2 * * *"
   workflow_dispatch:
     inputs:
-      model:
-        description: "OpenRouter model id for AI resolve + supervisor (empty = :free default)"
+      resolver_model:
+        description: "OpenRouter model for merge agent (empty = :free default)"
         required: false
-        default: ""
+        default: "minimax/minimax-m2.7:free"
+      supervisor_model:
+        description: "OpenRouter model for supervisor review (empty = :free default)"
+        required: false
+        default: "minimax/minimax-m3:free"
+
+env:
+  DEFAULT_AI_MODEL: minimax/minimax-m3:free
 
 concurrency:
   group: mirror-android-common-lts
@@ -243,7 +250,8 @@ jobs:
       DEST_REPO: sysretq0/android-kernel-common
       LTS: ${{ matrix.lts }}
       STABLE: ${{ matrix.stable }}
-      AI_MODEL: ${{ inputs.model }}
+      RESOLVER_MODEL: ${{ inputs.resolver_model }}
+      SUPERVISOR_MODEL: ${{ inputs.supervisor_model }}
     steps:
       - name: Checkout builder (AI harness tools)
         uses: actions/checkout@v4
@@ -261,9 +269,12 @@ jobs:
           fi
           OUT="${LTS/-lts/-stable}"
           REVIEW_OUT="${OUT}-review"
-          AI_MODEL_EFF="${AI_MODEL:-meta-llama/llama-3.3-70b-instruct:free}"
+          # Cron has no inputs (both empty) -> :free default. Manual dispatch
+          # pre-fills resolver=m2.7:free, supervisor=m3:free; edit either box.
+          RESOLVER_EFF="${RESOLVER_MODEL:-$DEFAULT_AI_MODEL}"
+          SUPERVISOR_EFF="${SUPERVISOR_MODEL:-$DEFAULT_AI_MODEL}"
           TOOLS="$GITHUB_WORKSPACE/builder/tools"
-          echo "LTS=$LTS STABLE=$STABLE OUT=$OUT REVIEW=$REVIEW_OUT MODEL=$AI_MODEL_EFF"
+          echo "LTS=$LTS STABLE=$STABLE OUT=$OUT REVIEW=$REVIEW_OUT RESOLVER=$RESOLVER_EFF SUPERVISOR=$SUPERVISOR_EFF"
 
           # Skip cleanly if this .y line doesn't exist yet (e.g. linux-6.18.y).
           if ! git ls-remote "$STABLE_URL" "refs/heads/$STABLE" | grep -q .; then
@@ -362,7 +373,7 @@ jobs:
             : > /tmp/ai_failed.txt
             while IFS= read -r f; do
               [ -z "$f" ] && continue
-              if ! AI_MODEL="$AI_MODEL_EFF" python3 "$TOOLS/ai-resolve.py" --file "$f" --ours-msg "$OURS_MSG" --theirs-msg "$THEIRS_MSG"; then
+              if ! AI_MODEL="$RESOLVER_EFF" python3 "$TOOLS/ai-resolve.py" --file "$f" --ours-msg "$OURS_MSG" --theirs-msg "$THEIRS_MSG"; then
                 echo "$f" >> /tmp/ai_failed.txt
               fi
             done < /tmp/ai_files.txt
@@ -415,7 +426,7 @@ jobs:
           ABI_HIT=""
           if git diff --name-only "$LTS_TIP...$MERGED" | grep -q "^android/abi_"; then ABI_HIT="android/abi_ changed"; fi
           set +e
-          AI_MODEL="$AI_MODEL_EFF" python3 "$TOOLS/supervise.py" --diff /tmp/merge.diff --lts "$LTS" --stable "$STABLE" | tee /tmp/verdict.txt
+          AI_MODEL="$SUPERVISOR_EFF" python3 "$TOOLS/supervise.py" --diff /tmp/merge.diff --lts "$LTS" --stable "$STABLE" | tee /tmp/verdict.txt
           SUP=$?
           set -e
           { echo "LTS=$LTS ($LTS_TIP)"; echo "stable=$STABLE ($STABLE_TIP)"; echo "merged=$MERGED mode=$MERGE_MODE"; echo "abi: ${ABI_HIT:-none}"; echo; echo "--- supervisor (exit $SUP) ---"; cat /tmp/verdict.txt; echo; echo "--- files ---"; git diff --name-only "$LTS_TIP...$MERGED"; } > /tmp/super.md

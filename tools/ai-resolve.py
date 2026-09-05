@@ -26,7 +26,7 @@ import sys
 import json
 import urllib.request
 
-FREE_DEFAULT = "meta-llama/llama-3.3-70b-instruct:free"
+FREE_DEFAULT = os.environ.get("DEFAULT_AI_MODEL", "minimax/minimax-m3:free")
 MAX_ATTEMPTS = 2
 
 def sh(*args):

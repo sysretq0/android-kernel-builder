@@ -14,7 +14,7 @@ import sys
 import json
 import urllib.request
 
-FREE_DEFAULT = "meta-llama/llama-3.3-70b-instruct:free"
+FREE_DEFAULT = os.environ.get("DEFAULT_AI_MODEL", "minimax/minimax-m3:free")
 
 PROMPT_TMPL = """You are a senior Linux kernel maintainer reviewing an Android-common LTS + Greg KH stable merge. Mergable does NOT mean compatible. Your job is to catch semantic breakage.
 
