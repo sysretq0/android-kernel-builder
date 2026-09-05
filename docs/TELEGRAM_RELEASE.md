@@ -1,28 +1,25 @@
-<b>⚡ GKI Kernel — {TAG}</b>
+<b>⚡ {KERNEL NAME} — {VERSION}</b>
 
 <b>✨ Highlights</b>
-• {one line per change, e.g. reintroduced CIFS/SMB client}
-• {e.g. 6.18 on KernelSU-Next dev}
+• {change 1}
+• {change 2}
 
 <b>📦 Builds</b>
 <pre>
-{one zip filename per line, e.g.}
-{AnyKernel3-android12-5.10-stable-r123.zip}
-{AnyKernel3-android14-6.1-stable-r123.zip}
+{one file per line}
 </pre>
 
-<b>⚙️ Inside</b>
-• KernelSU-Next ({latest tag, except 6.18: dev})
-• NoMount + Partition Guard
-• Extra: {e.g. BBR · CAKE · CIFS · metamodule}
+<b>⚙️ Features</b>
+• {feature 1}
+• {feature 2}
 
 <b>📲 Flash</b>
-• Pick the zip matching your branch, flash in recovery / KSU manager
-• Back up boot first — no auto-backup
+• {how to flash}
+• {backup warning}
 
 <b>⬇️ Download</b>
 {release URL}
 
 --
-Fill {…}, paste as-is (HTML parse mode). Keep Highlights to 1–3
-lines — the GitHub release holds the full build config table.
+Fill {…}, paste as-is (HTML parse mode). 1–3 highlight lines max —
+full details live on the GitHub release page.
