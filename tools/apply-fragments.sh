@@ -62,6 +62,21 @@ done
 # shellcheck disable=SC2086
 frags=$(printf '%s\n' $frags | sort -d | tr '\n' ' ')
 
+# Per-directory EXCLUDE files (one fragment name per line, # comments ok):
+# features that cannot live on a tree are dropped for it without touching
+# shared fragments. Feeds the same drop logic as --exclude below.
+for inp in ${FRAG_INPUTS[@]+"${FRAG_INPUTS[@]}"}; do
+  [ -d "$inp" ] && [ -f "$inp/EXCLUDE" ] || continue
+  while IFS= read -r line || [ -n "$line" ]; do
+    # shellcheck disable=SC2086
+    set -- $line
+    [ $# -eq 0 ] && continue
+    case "$1" in '#'*) continue ;; esac
+    EXCLUDE="$EXCLUDE,$1"
+    echo "apply-fragments: exclude file adds: $1" >&2
+  done <"$inp/EXCLUDE"
+done
+
 # Drop excluded names (full name, minus .config, or core minus last -segment).
 if [ -n "$EXCLUDE" ]; then
   excl=${EXCLUDE//,/ }; keep=""

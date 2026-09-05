@@ -15,14 +15,21 @@
 # Usage:
 #   stage-kleaf-fragments.sh --kernel-dir <common>
 #     [--fragment-dir DIRorFILE]... [--extra-config "CONFIG_X=y,..."]
+#     [--exclude "name,..."]
+#
+# A fragment dir may also carry an EXCLUDE file (one fragment name per
+# line, # comments ok): features that cannot live on a tree are dropped
+# for it without touching shared fragments. Same matching as --exclude
+# (full name, minus .config, or core minus last -segment).
 set -euo pipefail
 
-KERNEL_DIR=""; FRAG_INPUTS=(); EXTRA_CONFIG=""
+KERNEL_DIR=""; FRAG_INPUTS=(); EXTRA_CONFIG=""; EXCLUDE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --kernel-dir) KERNEL_DIR="$2"; shift 2 ;;
     --fragment-dir) FRAG_INPUTS+=("$2"); shift 2 ;;
     --extra-config) EXTRA_CONFIG="$2"; shift 2 ;;
+    --exclude) EXCLUDE="$2"; shift 2 ;;
     *) echo "stage-kleaf-fragments: unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -44,6 +51,36 @@ for inp in ${FRAG_INPUTS[@]+"${FRAG_INPUTS[@]}"}; do
 done
 # shellcheck disable=SC2086
 frags=$(printf '%s\n' $frags | sort -d | tr '\n' ' ')
+
+# Per-directory EXCLUDE files (see header) feed the same drop logic.
+for inp in ${FRAG_INPUTS[@]+"${FRAG_INPUTS[@]}"}; do
+  [ -d "$inp" ] && [ -f "$inp/EXCLUDE" ] || continue
+  while IFS= read -r line || [ -n "$line" ]; do
+    # shellcheck disable=SC2086
+    set -- $line
+    [ $# -eq 0 ] && continue
+    case "$1" in '#'*) continue ;; esac
+    EXCLUDE="$EXCLUDE,$1"
+    echo "stage-kleaf-fragments: exclude file adds: $1" >&2
+  done <"$inp/EXCLUDE"
+done
+
+# Drop excluded names (full name, minus .config, or core minus last -segment).
+if [ -n "$EXCLUDE" ]; then
+  excl=${EXCLUDE//,/ }; keep=""
+  # shellcheck disable=SC2086
+  for frag in $frags; do
+    [ -n "$frag" ] || continue
+    name=$(basename "$frag"); core=${name%.config}; core=${core%-*}; drop=""
+    # shellcheck disable=SC2086
+    for e in $excl; do
+      if [ "$name" = "$e" ] || [ "${name%.config}" = "$e" ] || [ "$core" = "$e" ]; then drop=1; break; fi
+    done
+    if [ -n "$drop" ]; then echo "stage-kleaf-fragments: excluded: $name" >&2
+    else keep="$keep $frag"; fi
+  done
+  frags=$keep
+fi
 
 if [ -n "$EXTRA_CONFIG" ]; then
   lcf=$(mktemp); save_ifs=$IFS; IFS=,

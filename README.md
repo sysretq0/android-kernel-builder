@@ -41,12 +41,17 @@ and trailing annotations on `CONFIG_` lines (e.g. `# nocheck`) pass
 through untouched.
 
 - `common/` — every tree: `bbr` `cake` `cifs` `ipset` `metamodule`
-  `usb-mass-storage` `wireguard` (`zswap` excluded: KMI-blocked, see below)
+  `usb-mass-storage` `wireguard`
 - Per-branch dirs (e.g. `android12-5.10-stable/`) — symbols deleted or
   renamed upstream: `usb-serial` (5.10-only; `=y` breaks Kleaf module
-  staging on 5.15+). `zswap` lives ONLY in `android15-6.6-stable/`:
-  `ZSWAP` selects `ZPOOL`, whose exports sit outside the KMI allowlist
-  on 5.10/5.15/6.1 and fail the strict ABI check there.
+  staging on 5.15+). The `zswap` family (`zswap`+`zbud`+`frontswap`
+  where the symbols exist) rides per-branch on every tree proven green
+  (5.10x2, 14-5.15, 6.1, 6.6, 6.12-pending); `android13-5.15` is
+deliberately excluded (its ABI list lacks the `zpool` exports — strict
+  KMI fail, proven), as is 6.18 (`zpool` deleted upstream). A per-dir
+  `EXCLUDE` file drops shared features a tree cannot take (currently:
+  `cifs` on 6.12 — `CIFS=y` would select `NETFS_SUPPORT=y` while the
+  module list demands `netfs.ko`).
 - Generated `.fragments/` (KSU/NoMount/guard) ride the same pipeline
 
 Era handling: `build.sh` trees bake fragments into the defconfig +
