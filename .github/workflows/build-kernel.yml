@@ -14,6 +14,9 @@ on:
 
 jobs:
   build:
+    # Job-level filter: non-matching branches show as Skipped (grey),
+    # not fake-green success. Empty input = schedule event = build all.
+    if: ${{ inputs.branch == '' || inputs.branch == 'all' || inputs.branch == matrix.our_branch || inputs.branch == matrix.fallback_branch }}
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
@@ -67,11 +70,7 @@ jobs:
           OVERRIDE: ${{ inputs.our_revision }}
           WANT: ${{ matrix.our_branch }}
           FALLBACK: ${{ matrix.fallback_branch }}
-          ONLY: ${{ inputs.branch }}
         run: |
-          if [ -n "$ONLY" ] && [ "$ONLY" != "all" ] && [ "$ONLY" != "$WANT" ] && [ "$ONLY" != "$FALLBACK" ]; then
-            echo "skip=true" >>"$GITHUB_OUTPUT"; exit 0
-          fi
           if [ -n "$OVERRIDE" ]; then REV="$OVERRIDE"; else
             if git ls-remote --heads "https://github.com/sysretq0/android-kernel-common" "$WANT" | grep -q .; then REV="$WANT"; else REV="$FALLBACK"; fi
           fi
@@ -79,13 +78,11 @@ jobs:
           echo "Building common@$REV"
 
       - name: Install repo tool
-        if: steps.rev.outputs.skip != 'true'
         run: |
           mkdir -p ~/.bin && curl -sL https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
           chmod +x ~/.bin/repo && echo "$HOME/.bin" >>"$GITHUB_PATH"
 
       - name: repo init + vendor our common
-        if: steps.rev.outputs.skip != 'true'
         run: |
           mkdir -p kernel && cd kernel
           repo init -u https://android.googlesource.com/kernel/manifest -b "${{ matrix.manifest_branch }}" --depth=1
@@ -94,25 +91,23 @@ jobs:
           cat .repo/local_manifests/vendor-common.xml
 
       - name: repo sync (minimal)
-        if: steps.rev.outputs.skip != 'true'
         run: |
           cd kernel
           repo sync -c -j$(nproc) --no-tags --fail-fast
 
       - name: Build (build.sh era)
-        if: steps.rev.outputs.skip != 'true' && matrix.build_kind == 'build_sh'
+        if: matrix.build_kind == 'build_sh'
         run: |
           cd kernel
           BUILD_CONFIG=common/build.config.gki.aarch64 build/build.sh
 
       - name: Build (Kleaf era)
-        if: steps.rev.outputs.skip != 'true' && matrix.build_kind == 'kleaf'
+        if: matrix.build_kind == 'kleaf'
         run: |
           cd kernel
           tools/bazel build //common:kernel_aarch64_dist
 
       - name: Collect outputs
-        if: steps.rev.outputs.skip != 'true'
         run: |
           cd kernel
           mkdir -p "$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}"
@@ -123,7 +118,6 @@ jobs:
           ls -la "$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}/"
 
       - name: Upload artifacts
-        if: steps.rev.outputs.skip != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: kernel-${{ steps.rev.outputs.rev }}
