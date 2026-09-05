@@ -145,12 +145,14 @@ jobs:
           cd kernel
           bash "$GITHUB_WORKSPACE/builder/tools/setup-nomount.sh" --ref "${{ inputs.nomount_ref }}"
 
-      # Portable config injection (all eras): merge fragments/common/*.config
-      # + fragments/<our_branch>/*.config (+ dispatch extra_config) into
-      # arch/arm64/configs/gki_defconfig. Both build paths start from
-      # `make gki_defconfig`, so one mechanism covers build.sh and Kleaf.
-      # No fragments present = stock defconfig, this step is a no-op.
-      - name: Apply config fragments
+      # Portable config injection, per era:
+      # - build.sh: merge fragments/common + fragments/<our_branch> (+ extra
+      #   .fragments) INTO gki_defconfig; self-heal re-canonicalizes after.
+      # - Kleaf: base defconfig must stay PRISTINE (stock check_defconfig runs
+      #   as its POST hook); fragments ride --defconfig_fragment instead.
+      # No fragments present = stock defconfig, these steps are no-ops.
+      - name: Apply config fragments (build.sh era)
+        if: matrix.build_kind == 'build_sh'
         run: |
           cd kernel
           ARGS=(--kernel-dir common)
@@ -163,6 +165,22 @@ jobs:
           # Generated fragments (KSU/NoMount): only present when that step ran.
           [ -d .fragments ] && ARGS+=(--fragment-dir .fragments)
           bash "$GITHUB_WORKSPACE/builder/tools/apply-fragments.sh" "${ARGS[@]}"
+
+      - name: Stage Kleaf fragments
+        id: kleaf_frag
+        if: matrix.build_kind == 'kleaf'
+        run: |
+          cd kernel
+          ARGS=(--kernel-dir common)
+          [ -d "$GITHUB_WORKSPACE/builder/fragments/common" ] &&
+            ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/common")
+          [ -d "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}" ] &&
+            ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}")
+          [ -n "${{ inputs.extra_config }}" ] &&
+            ARGS+=(--extra-config "${{ inputs.extra_config }}")
+          [ -d .fragments ] && ARGS+=(--fragment-dir .fragments)
+          bash "$GITHUB_WORKSPACE/builder/tools/stage-kleaf-fragments.sh" "${ARGS[@]}"
+          [ -f common/builder_fragments.config ] && echo "has=true" >>"$GITHUB_OUTPUT" || echo "has=false" >>"$GITHUB_OUTPUT"
 
       # setlocalversion stamps -dirty on ANY uncommitted change at compile
       # time, so commit the whole tree before building. Self-heal does the
@@ -206,7 +224,11 @@ jobs:
         if: matrix.build_kind == 'kleaf'
         run: |
           cd kernel
-          tools/bazel build //common:kernel_aarch64_dist
+          FLAG=""
+          [ "${{ steps.kleaf_frag.outputs.has }}" = "true" ] &&
+            FLAG="--defconfig_fragment=//common:builder_fragments"
+          # shellcheck disable=SC2086
+          tools/bazel build $FLAG //common:kernel_aarch64_dist
 
       - name: Collect outputs
         run: |

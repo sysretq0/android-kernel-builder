@@ -37,12 +37,15 @@ CONFIG_NR_CPUS=512
 
 ## Why no ordering worry
 
-- `build.sh`: `check_defconfig` requires the committed defconfig to
-  byte-match canonical `savedefconfig`. The workflow pairs fragment injection
-  with `tools/self-heal-config.sh` as `POST_DEFCONFIG_CMDS`, which
+- `build.sh`: fragments are baked into `gki_defconfig`, and `check_defconfig`
+  requires it to byte-match canonical `savedefconfig`. The workflow pairs
+  injection with `tools/self-heal-config.sh` as `POST_DEFCONFIG_CMDS`, which
   re-canonicalizes (repair → re-derive to fixed point) automatically.
-- Kleaf: fragments are order-insensitive (`merge_config.sh` at build time),
-  so the baked-in base defconfig just works.
+- Kleaf: the base `gki_defconfig` stays pristine (Kleaf runs stock
+  `check_defconfig` on it too). Fragments are staged into
+  `common/builder_fragments.config` + filegroup and passed via
+  `--defconfig_fragment`, which merges order-insensitively (`merge_config.sh`)
+  and verifies per-symbol (`Are they declared in Kconfig?` on typos).
 
 ## Ad-hoc (no commit)
 
