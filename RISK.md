@@ -11,7 +11,7 @@ revisited whenever a build proves otherwise.
 |---|---|---|---|
 | 1 | metamodule (OVERLAY_FS, FUSE_FS, TMPFS*, SECURITYFS, CONFIGFS_FS) | LOW | Mature VFS primitives; module tooling needs them, nothing auto-loads |
 | 2 | bbr (ADVANCED=y, BBR=y, BIC/WESTWOOD/HTCP off) | LOW | BBR mature; default CC stays CUBIC; stragglers explicitly off |
-| 3 | wireguard | LOW | In-tree, no auto-path, keyed on demand |
+| 3 | wireguard | RETIRED | Stock =y on all six trees (verified defconfigs) — fragment is a no-op, parked permanently |
 | 4 | cake | LOW | Dep-less qdisc, tc opt-in only |
 | 5 | cifs (+XATTR, POSIX) | LOW | In-tree SMB client, mount-gated; 6.12 module-list handled at build time |
 | 6 | ipset family | LOW | Mature netfilter, no auto-path, no boot-insmod (verified zero defaults) |
