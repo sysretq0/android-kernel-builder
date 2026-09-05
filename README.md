@@ -29,6 +29,7 @@ Kconfig fragment system. Flashable AnyKernel3 zips land on
 | `nomount` / `nomount_ref` | true / `dev` | `maxsteeel/nomount` | Built-in `CONFIG_NOMOUNT=y` |
 | `guard` / `guard_ref` | true / `main` | `sysretq0/android-partition-guard` | Default-y LSM; installer presence is the opt-in |
 | `extra_config` | — | inline `CONFIG_X=y,...` | This run only, no commit |
+| `fragments` | true | repo fragment dirs on/off | `false` = stock baseline (combine with feature toggles off; `extra_config` still applies) |
 
 ## Fragments (`fragments/`)
 

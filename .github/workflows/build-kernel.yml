@@ -33,6 +33,10 @@ on:
       guard_ref:
         description: "Partition Guard branch/tag/commit (default: main)"
         default: ""
+      fragments:
+        description: "Apply repo fragment dirs (false = stock baseline; extra_config still applies)"
+        type: boolean
+        default: true
   schedule:
     - cron: "0 5 * * 0" # weekly Sunday 05:00 UTC
 
@@ -192,33 +196,36 @@ jobs:
       #   as its POST hook); fragments ride --defconfig_fragment instead.
       # No fragments present = stock defconfig, these steps are no-ops.
       - name: Apply config fragments (build.sh era)
-        if: matrix.build_kind == 'build_sh'
+        if: matrix.build_kind == 'build_sh' && (inputs.fragments != false || inputs.extra_config != '')
         run: |
           cd kernel
           ARGS=(--kernel-dir common)
-          [ -d "$GITHUB_WORKSPACE/builder/fragments/common" ] &&
-            ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/common")
-          [ -d "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}" ] &&
-            ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}")
+          if [ "${{ inputs.fragments }}" != "false" ]; then
+            [ -d "$GITHUB_WORKSPACE/builder/fragments/common" ] &&
+              ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/common")
+            [ -d "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}" ] &&
+              ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}")
+            [ -d .fragments ] && ARGS+=(--fragment-dir .fragments)
+          fi
           [ -n "${{ inputs.extra_config }}" ] &&
             ARGS+=(--extra-config "${{ inputs.extra_config }}")
-          # Generated fragments (KSU/NoMount): only present when that step ran.
-          [ -d .fragments ] && ARGS+=(--fragment-dir .fragments)
           bash "$GITHUB_WORKSPACE/builder/tools/apply-fragments.sh" "${ARGS[@]}"
 
       - name: Stage Kleaf fragments
         id: kleaf_frag
-        if: matrix.build_kind == 'kleaf'
+        if: matrix.build_kind == 'kleaf' && (inputs.fragments != false || inputs.extra_config != '')
         run: |
           cd kernel
           ARGS=(--kernel-dir common)
-          [ -d "$GITHUB_WORKSPACE/builder/fragments/common" ] &&
-            ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/common")
-          [ -d "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}" ] &&
-            ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}")
+          if [ "${{ inputs.fragments }}" != "false" ]; then
+            [ -d "$GITHUB_WORKSPACE/builder/fragments/common" ] &&
+              ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/common")
+            [ -d "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}" ] &&
+              ARGS+=(--fragment-dir "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}")
+            [ -d .fragments ] && ARGS+=(--fragment-dir .fragments)
+          fi
           [ -n "${{ inputs.extra_config }}" ] &&
             ARGS+=(--extra-config "${{ inputs.extra_config }}")
-          [ -d .fragments ] && ARGS+=(--fragment-dir .fragments)
           bash "$GITHUB_WORKSPACE/builder/tools/stage-kleaf-fragments.sh" "${ARGS[@]}"
           [ -f common/builder_fragments.config ] && echo "has=true" >>"$GITHUB_OUTPUT" || echo "has=false" >>"$GITHUB_OUTPUT"
 
