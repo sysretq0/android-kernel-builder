@@ -1,0 +1,114 @@
+name: mirror-android-common-lts
+
+# Full-history mirror of android.googlesource.com/kernel/common LTS branches
+# into sysretq0/android-kernel-common-lts.
+# - Whole history (no shallow, no filter, no squash)
+# - No force push (fast-forward only, fails safe on divergence)
+# - Preserves tags + commit metadata bit-for-bit (pure fetch + push, no rewrites)
+# - 8 branches sync in parallel (matrix); tags sync once afterwards.
+#
+# Why no push races:
+# - Each matrix job pushes exactly ONE distinct ref (refs/heads/<branch>),
+#   so no two jobs ever lock the same ref (no "cannot lock ref" failures).
+# - No multi-ref --atomic pushes from parallel jobs (atomic locks all refs
+#   at once and would contend). Each job pushes only its own branch.
+# - Tags are pushed once in the downstream publish-tags job (needs: sync),
+#   not 8x concurrently, and without --force so existing tags never move.
+# - Top-level concurrency serializes overlapping cron runs; fail-fast:false
+#   lets the other branches finish if one fails.
+
+on:
+  schedule:
+    # Daily 02:30 UTC. Tune as needed.
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-android-common-lts
+  cancel-in-progress: false
+
+permissions:
+  contents: read # only needs read here; push to DEST uses KERNEL_MIRROR_TOKEN
+
+jobs:
+  sync-branch:
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - android12-5.10-lts
+          - android13-5.10-lts
+          - android13-5.15-lts
+          - android14-5.15-lts
+          - android14-6.1-lts
+          - android15-6.6-lts
+          - android16-6.12-lts
+          - android17-6.18-lts
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      UPSTREAM_URL: https://android.googlesource.com/kernel/common
+      DEST_REPO: sysretq0/android-kernel-common-lts
+      BRANCH: ${{ matrix.branch }}
+    steps:
+      - name: Mirror one branch (full history, fast-forward only)
+        env:
+          DEST_TOKEN: ${{ secrets.KERNEL_MIRROR_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEST_TOKEN:-}" ]; then
+            echo "::error::Missing secret KERNEL_MIRROR_TOKEN (PAT with 'repo' write access to $DEST_REPO)."
+            echo "Set it with: gh secret set KERNEL_MIRROR_TOKEN --repo ${GITHUB_REPOSITORY}"
+            echo "(paste a fine-grained PAT limited to $DEST_REPO: Contents read+write)."
+            exit 1
+          fi
+
+          rm -rf mirror.git
+          git init --bare -q mirror.git
+          cd mirror.git
+          git remote add upstream "$UPSTREAM_URL"
+          git remote add dest "https://x-access-token:${DEST_TOKEN}@github.com/${DEST_REPO}.git"
+
+          # Full history: no --depth, no --filter, no --shallow.
+          # No '+' prefix on fetch refspec: never overwrite tracking ref unexpectedly.
+          git fetch --no-tags --prune --verbose upstream "refs/heads/$BRANCH:refs/remotes/upstream/$BRANCH"
+
+          echo "$BRANCH $(git rev-parse "refs/remotes/upstream/$BRANCH")"
+
+          # No '+' prefix => fast-forward only. Fails safe instead of clobbering history.
+          # Single-ref push: locks only refs/heads/$BRANCH, so parallel jobs never contend.
+          git push --verbose dest "refs/remotes/upstream/$BRANCH:refs/heads/$BRANCH"
+
+  publish-tags:
+    needs: [sync-branch]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      UPSTREAM_URL: https://android.googlesource.com/kernel/common
+      DEST_REPO: sysretq0/android-kernel-common-lts
+    steps:
+      - name: Mirror all tags (new tags only, no --force)
+        env:
+          DEST_TOKEN: ${{ secrets.KERNEL_MIRROR_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DEST_TOKEN:-}" ]; then
+            echo "::error::Missing secret KERNEL_MIRROR_TOKEN."
+            exit 1
+          fi
+
+          rm -rf tags.git
+          git init --bare -q tags.git
+          cd tags.git
+          git remote add upstream "$UPSTREAM_URL"
+          git remote add dest "https://x-access-token:${DEST_TOKEN}@github.com/${DEST_REPO}.git"
+
+          # Fetch all tags without '+' so existing tags are never overwritten locally.
+          git fetch --verbose upstream "refs/tags/*:refs/tags/*" || true
+          echo "tags fetched: $(git tag | wc -l)"
+
+          # Push new tags only, without --force: existing tags on dest never move.
+          # Runs once (not per-branch) so concurrent tag pushes can't race.
+          git push --verbose dest "refs/tags/*:refs/tags/*" || {
+            echo "::warning::tag push skipped some refs (existing tags kept as-is). Branch sync above already completed."
+          }
