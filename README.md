@@ -15,7 +15,7 @@ Kconfig fragment system. Flashable AnyKernel3 zips land on
 
 ## What a build produces (per branch)
 
-- `Image` (+ `.lz4`/`.gz` where the tree compresses it), `vmlinux`, `System.map`
+- `Image` (raw, uncompressed — compressed variants panic at boot), `vmlinux`, `System.map`
 - `anykernel-<rev>.zip` — self-contained flashable zip (vendored AK3 +
   custom `anykernel.sh`), published to **Releases**
 - KernelSU-Next baked in (`ksu=true`), NoMount built-in (`nomount=true`),

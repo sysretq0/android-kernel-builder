@@ -280,7 +280,10 @@ jobs:
         run: |
           OUT="$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}"
           IMG=""
-          for cand in Image.lz4 Image.gz Image; do
+          # Raw Image first, always: compressed variants (lz4/gz) panic
+          # at boot ("decompress kernel image fail" -- decompressor or
+          # magiskboot too old for them). Fallbacks only if raw is absent.
+          for cand in Image Image.gz Image.lz4; do
             [ -f "$OUT/$cand" ] && IMG="$OUT/$cand" && break
           done
           [ -n "$IMG" ] || { echo "no kernel image for AK3 zip; skipping"; exit 0; }
