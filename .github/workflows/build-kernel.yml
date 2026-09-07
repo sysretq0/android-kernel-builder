@@ -69,7 +69,7 @@ jobs:
           repo sync -c --no-tags -j"$(nproc)"
 
       - name: Stage added config
-        run: python3 ../builder/tools/stage_fragments.py "${{ matrix.kind }}"
+        run: python3 ../builder/tools/stage_fragments.py "${{ matrix.kind }}" "${{ inputs.variant }}" "${{ matrix.branch }}"
         working-directory: work
 
       - name: Build

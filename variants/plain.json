@@ -4,8 +4,8 @@
     "fragments": true
   },
   "branches": [
-    { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts", "kind": "build_sh" },
-    { "branch": "android13-5.10-lts", "manifest": "common-android13-5.10-lts", "kind": "build_sh" },
+    { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts", "kind": "build_sh", "extra": ["usb-serial"] },
+    { "branch": "android13-5.10-lts", "manifest": "common-android13-5.10-lts", "kind": "build_sh", "extra": ["usb-serial"] },
     { "branch": "android13-5.15-lts", "manifest": "common-android13-5.15-lts", "kind": "build_sh" },
     { "branch": "android14-5.15-lts", "manifest": "common-android14-5.15-lts", "kind": "kleaf" },
     { "branch": "android14-6.1-lts",  "manifest": "common-android14-6.1-lts",  "kind": "kleaf" },

@@ -1,21 +1,36 @@
 #!/usr/bin/env python3
 """Logic: stage added config for the build to consume. Runs with cwd=work.
 
-Writes work/modular.fragment (validated, last-file-wins) plus, on Kleaf
+Sources (in merge order, last wins on conflict):
+1. fragments/common/*.config -- universal, every branch, no JSON needed
+2. branch "extra" names from variants/<variant>.json, resolved to
+   fragments/version-specific/<name>.config -- one shared copy each,
+   JSON dictates which branches get what. Missing file = hard fail.
+
+Writes work/modular.fragment (validated, canon lines) plus, on Kleaf
 trees, common/builder_fragments.config + filegroup (idempotent).
 
 The committed defconfig is NEVER touched: build.sh merges at
 POST_DEFCONFIG time into OUT_DIR/.config, so the savedefconfig
-byte-match check sees a pristine source. Appending symbols to the
-defconfig breaks canonical ordering (observed savedefconfig mismatch).
+byte-match check sees a pristine source.
 """
+import json
 import re
 import sys
 from pathlib import Path
 
-kind = sys.argv[1]
+kind, variant, branch = sys.argv[1], sys.argv[2], sys.argv[3]
 builder = Path("../builder")  # cwd=work, checkout is a sibling
+
+v = json.loads((builder / "variants" / f"{variant}.json").read_text())
+rec = next(b for b in v["branches"] if b["branch"] == branch)
+
 frags = sorted((builder / "fragments" / "common").glob("*.config"))
+for name in rec.get("extra", []):
+    f = builder / "fragments" / "version-specific" / f"{name}.config"
+    if not f.is_file():
+        sys.exit(f"FAIL: {branch} lists extra {name!r}, no such file")
+    frags.append(f)
 
 if not frags:
     print("no fragments; stock tree")
@@ -44,6 +59,8 @@ if kind == "kleaf":
     dest = Path("common/builder_fragments.config")
     dest.write_text(body)
     build_bazel = Path("common/BUILD.bazel")
+    if not build_bazel.is_file():
+        sys.exit("FAIL: no common/BUILD.bazel (not a Kleaf tree?)")
     marker = 'name = "builder_fragments"'
     if marker not in build_bazel.read_text():
         with open(build_bazel, "a") as f:
