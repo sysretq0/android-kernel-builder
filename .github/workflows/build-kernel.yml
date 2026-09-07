@@ -17,10 +17,6 @@ on:
         options:
           - artifact
           - release
-      override:
-        description: JSON merge-patch over the variant (e.g. {"ksu":{"tag":"v3.3.0"}})
-        default: "{}"
-        required: false
       branch:
         description: Branch to build (or all)
         default: all
@@ -82,7 +78,7 @@ jobs:
           repo sync -c --no-tags -j"$(nproc)"
 
       - name: Integrate features
-        run: python3 ../builder/tools/integrate.py "${{ inputs.variant }}" "${{ matrix.branch }}" '${{ inputs.override }}'
+        run: python3 ../builder/tools/integrate.py "${{ inputs.variant }}" "${{ matrix.branch }}"
         working-directory: work
 
       - name: Stage added config
