@@ -26,7 +26,7 @@ never hardcoded) prove each symbol survives `olddefconfig`.
 | snd-aloop (`SND_ALOOP=y`) | common | LOW | In-tree PCM loopback for audio-bridge projects (real user demand, WK#173). `=y` because we ship Images not `.ko`s. Verified 5.10–6.18: identical stanza, SND=y stock, zero aloop/pcm/timer `.ko` in any modules list |
 | ntfs3 (`NTFS3_FS=y`) | 5.15/6.1/6.6/6.12/6.18 | LOW | In-tree since 5.15; absent on 5.10 so per-branch by necessity, not choice |
 | zswap + zbud | 6.6 only | LOW | Mature mm code, pool off by default (needs explicit enable). Scoped to 6.6 because ZSWAP selects ZPOOL whose symbols breach the 5.15 KMI allowlist, and 6.12 module lists demand `zsmalloc.ko` |
-| ntsync (`NTSYNC=y`) | 6.18 only | LOW | Bare tristate, no deps, dormant `/dev/ntsync`. Unselectable on 6.12 (BROKEN gate), absent on 6.6 — sole-tree by Kconfig reality |
+| ntsync (`NTSYNC=y`) | 6.18 in-tree; backported 5.10–6.6 | LOW | Dormant char device (Winlator/GameHub demand, WK#257). Vendored WildKernels base + per-tree compat (5.10 self-selects via dry-run); version-gated like BBRv3, `.rej` + marker fail-closed |
 
 ## Source integrations (all SHA-pinned per branch in `variants/`)
 

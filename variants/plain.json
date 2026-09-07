@@ -6,7 +6,8 @@
     "guard": true,
     "susfs": false,
     "bbrv3": true,
-    "fragments": true
+    "fragments": true,
+    "ntsync": true
   },
   "branches": [
     {

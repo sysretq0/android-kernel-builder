@@ -1,0 +1,22 @@
+Vendored NTSync backports (WildKernels kernel_patches, GPL-2.0-only
+third-party diffs against GPL-2.0 kernel code; same license terms as
+patches/bbrv3/NOTICE -- applied verbatim, no relicensing, no SPDX headers
+inside .patch files).
+
+LICENSE: see patches/bbrv3/NOTICE (identical terms).
+
+Sources (fetched 2026-09-07, verbatim):
+- ntsync_base.patch (new drivers/misc/ntsync.c + uapi header, ~1340 lines)
+  ............ WildKernels/kernel_patches, common/ntsync/
+- ntsync_compat_android{12-5.10,12-5.10_A14,13-5.15,14-6.1,15-6.6}.patch
+  (Kconfig/Makefile entries; 5.10 pair also carries lockdep shims)
+
+Mapping (setup-ntsync.sh): base always; compat per tree, with 5.10
+self-selecting between the two 5.10 files via patch --dry-run (their hunk
+offsets track different sublevel bases; LTS tips move, guessing rots).
+6.12+ carry NTSYNC in-tree and need nothing here.
+
+Dropped (LTS-only, unreachable): WK's 0001/0002 lockdep prerequisite
+patches (5.10 sublevel <=66/209/210 gates; ours at 269).
+
+Refresh: same procedure as patches/bbrv3/NOTICE.

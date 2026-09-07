@@ -38,6 +38,7 @@ jobs:
       guard: ${{ steps.v.outputs.guard }}
       susfs: ${{ steps.v.outputs.susfs }}
       bbrv3: ${{ steps.v.outputs.bbrv3 }}
+      ntsync: ${{ steps.v.outputs.ntsync }}
       fragments: ${{ steps.v.outputs.fragments }}
       extra_config: ${{ steps.v.outputs.extra_config }}
       branch: ${{ steps.v.outputs.branch }}
@@ -59,6 +60,7 @@ jobs:
           echo "guard=$(get guard)" >>"$GITHUB_OUTPUT"
           echo "susfs=$(get susfs)" >>"$GITHUB_OUTPUT"
           echo "bbrv3=$(get bbrv3)" >>"$GITHUB_OUTPUT"
+          echo "ntsync=$(get ntsync)" >>"$GITHUB_OUTPUT"
           for c in nomount_ref guard_ref; do
             n=$(jq -r ".branches[].$c // \"\"" <<<"$J" | sort -u | grep -c . || true)
             [ "$n" -le 1 ] || { echo "parity: $c differs across branches"; exit 2; }
@@ -86,7 +88,7 @@ jobs:
             echo "|---|---|---|---|---|"
             jq -r '.branches[] | "| \(.branch) | \(.ksu_ref[0:8]) | \((.susfs_ref // "")[0:8]) | \((.nomount_ref // "")[0:8]) | \((.guard_ref // "")[0:8]) |"' <<<"$J"
             echo ""
-            echo "- ksu=${{ steps.v.outputs.ksu }} susfs=${{ steps.v.outputs.susfs }} bbrv3=${{ steps.v.outputs.bbrv3 }} nomount=${{ steps.v.outputs.nomount }} guard=${{ steps.v.outputs.guard }} fragments=${{ steps.v.outputs.fragments }}"
+            echo "- ksu=${{ steps.v.outputs.ksu }} susfs=${{ steps.v.outputs.susfs }} bbrv3=${{ steps.v.outputs.bbrv3 }} ntsync=${{ steps.v.outputs.ntsync }} nomount=${{ steps.v.outputs.nomount }} guard=${{ steps.v.outputs.guard }} fragments=${{ steps.v.outputs.fragments }}"
             echo "- release=${{ inputs.release }} (Telegram always on release)"
           } >>"$GITHUB_STEP_SUMMARY"
 
@@ -169,6 +171,14 @@ jobs:
           bash "$GITHUB_WORKSPACE/builder/tools/setup-bbrv3.sh" \
             --our-branch "${{ matrix.our_branch }}" \
             --patch-dir "$GITHUB_WORKSPACE/builder/patches/bbrv3"
+
+      - name: Integrate NTSync
+        if: needs.resolve.outputs.ntsync != 'false'
+        run: |
+          cd kernel
+          bash "$GITHUB_WORKSPACE/builder/tools/setup-ntsync.sh" \
+            --our-branch "${{ matrix.our_branch }}" \
+            --patch-dir "$GITHUB_WORKSPACE/builder/patches/ntsync"
 
       - name: Integrate NoMount
         if: needs.resolve.outputs.nomount != 'false'
@@ -424,6 +434,20 @@ jobs:
         with:
           name: bbrv3-version-${{ steps.rev.outputs.rev }}
           path: bbrv3-version-${{ steps.rev.outputs.rev }}.txt
+          if-no-files-found: ignore
+
+      - name: Stage NTSync version
+        if: needs.resolve.outputs.ntsync != 'false'
+        run: |
+          [ -f kernel/.ntsync-version ] \
+            && cp kernel/.ntsync-version "ntsync-version-${{ steps.rev.outputs.rev }}.txt" \
+            || echo "ntsync in-tree or skipped here; upload will skip"
+      - name: Upload NTSync version
+        if: needs.resolve.outputs.ntsync != 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ntsync-version-${{ steps.rev.outputs.rev }}
+          path: ntsync-version-${{ steps.rev.outputs.rev }}.txt
           if-no-files-found: ignore
 
   release:
