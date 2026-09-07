@@ -1,0 +1,25 @@
+name: detect-upstream
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder
+          ref: modular
+      - id: cmp
+        run: |
+          cd builder
+          OUT=$(python3 tools/check-upstream.py plain)
+          echo "$OUT"
+          echo "$OUT" | grep -q "^CHANGED " && echo "changed=true" >>"$GITHUB_OUTPUT" || echo "changed=false" >>"$GITHUB_OUTPUT"
+      - name: Dispatch plain fleet
+        if: steps.cmp.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run build-kernel.yml --ref modular -f variant=plain -f destination=artifact -f branch=all
