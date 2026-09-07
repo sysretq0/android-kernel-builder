@@ -18,6 +18,12 @@ if want != "all":
         sys.exit(f"unknown branch: {want}")
 
 matrix = json.dumps({"include": rows})
-with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+path = os.environ["GITHUB_OUTPUT"]
+with open(path, "a") as f:
     f.write(f"matrix={matrix}\n")
+# read-back: prove the handoff instead of failing downstream on ''
+back = [l for l in open(path).read().splitlines()
+        if l.startswith("matrix=")]
+assert back and json.loads(back[-1].split("=", 1)[1]) == {"include": rows}, \
+    f"handoff broken: {path} has no matrix line"
 print(matrix)
