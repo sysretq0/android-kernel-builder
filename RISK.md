@@ -51,6 +51,19 @@ never hardcoded) prove each symbol survives `olddefconfig`.
 | AK3: raw `Image`, `BLOCK=boot`, `kernel.config` + extracted `ikconfig` | LOW | Compressed images panic at decompress (observed); ikconfig is proof of what shipped in the binary |
 | Versioned zip names, per-branch KSU/SuSFS version artifacts → release + Telegram | LOW | Presence means built; release body and Telegram render from artifacts, no hand-written status |
 
+## ABI contract
+
+All fragments are additive-only (`=y` on unset symbols, never removals or
+renames), so the vendor-module contract holds by construction: existing
+vendor `.ko`s resolve against a superset of what they were built against.
+Verified per addition that no export is removed or changed signature.
+Example audited: `snd-aloop` adds zero exports (leaf driver); the
+`SND_PCM`/`SND_TIMER` core it selects adds ~38 long-stable PCM/TIMER
+exports that vendor audio stacks already consume. Our pipeline does not
+run Google's allowlist certification step (submission artifact, not a
+boot/function gate); KMI compatibility for on-device modules is what
+matters, and addition cannot break it.
+
 ## Process risks
 
 | Item | Grade | Why |
