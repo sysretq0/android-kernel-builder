@@ -1,7 +1,10 @@
 {
   "defaults": {
     "our_revision": "lts",
-    "fragments": true
+    "fragments": true,
+    "ksu": { "branch": "dev", "tag": "", "commit": "2482c56952ea36ee13809058c279a2dce075113f" },
+    "nomount": { "branch": "dev", "tag": "", "commit": "9122a0bf5705e50d9a0ba12ef662413028f3a877" },
+    "guard": { "branch": "main", "tag": "", "commit": "c12b72944345ad883a36a6e3b95538fbfd399f64" }
   },
   "branches": [
     { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts", "kind": "build_sh", "extra": ["usb-serial"] },

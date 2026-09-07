@@ -31,6 +31,11 @@ for name in rec.get("extra", []):
     if not f.is_file():
         sys.exit(f"FAIL: {branch} lists extra {name!r}, no such file")
     frags.append(f)
+# generated fragments (module installers ran before stage, so source and
+# symbol always agree -- a symbol without its driver cannot be staged)
+gen = sorted(Path("modular.fragments.d").glob("*.config")) \
+    if Path("modular.fragments.d").is_dir() else []
+frags += gen
 
 if not frags:
     print("no fragments; stock tree")

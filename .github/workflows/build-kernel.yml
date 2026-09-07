@@ -17,6 +17,10 @@ on:
         options:
           - artifact
           - release
+      override:
+        description: JSON merge-patch over the variant (e.g. {"ksu":{"tag":"v3.3.0"}})
+        default: "{}"
+        required: false
       branch:
         description: Branch to build (or all)
         default: all
@@ -67,6 +71,10 @@ jobs:
           repo init -u https://android.googlesource.com/kernel/manifest \
             -b "${{ matrix.manifest }}" --depth=1 --groups=all
           repo sync -c --no-tags -j"$(nproc)"
+
+      - name: Integrate features
+        run: python3 ../builder/tools/integrate.py "${{ inputs.variant }}" "${{ matrix.branch }}" '${{ inputs.override }}'
+        working-directory: work
 
       - name: Stage added config
         run: python3 ../builder/tools/stage_fragments.py "${{ matrix.kind }}" "${{ inputs.variant }}" "${{ matrix.branch }}"
