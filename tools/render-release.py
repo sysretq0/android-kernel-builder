@@ -9,6 +9,7 @@ Argv: <versions-root> <builder> <variant> <tag> <zips-dir>
 Env: RUN_URL REPO (optional links)
 """
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -50,7 +51,12 @@ hdr = "| branch | " + " | ".join(labels[c]["label"] for c in cols) + " |"
 sep = "|" + "|".join(["---"] * (len(cols) + 1)) + "|"
 lines = [f"# {tag} ({variant})", ""]
 if bcommit:
-    lines += [f"Built from builder@{bcommit[:12]}", ""]
+    repo = os.environ.get("REPO", "")
+    if repo:
+        lines += [f"Built from [builder@{bcommit[:12]}]"
+                  f"(https://github.com/{repo}/commit/{bcommit})", ""]
+    else:
+        lines += [f"Built from builder@{bcommit[:12]}", ""]
 lines += [hdr, sep]
 tg = [f"{tag} @ {bcommit[:12]}" if bcommit else tag, ""]
 for branch in sorted(branches):
