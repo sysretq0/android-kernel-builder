@@ -1,0 +1,42 @@
+From: Zoo <zoo@example.com>
+Date: Thu, 13 Jul 2026 20:55:00 +0000
+Subject: [PATCH] net: tcp: add tcp_snd_cwnd() and tcp_snd_cwnd_set() helper
+ functions
+
+The BBRv3 congestion control module uses tcp_snd_cwnd() and
+tcp_snd_cwnd_set() helper functions to access and modify the
+send cwnd value. These functions were added in later 5.15
+kernel versions and are required for BBRv3 to compile.
+
+This patch backports these helper function definitions to
+the android13-5.15-2022-11 kernel.
+
+Signed-off-by: Zoo <zoo@example.com>
+---
+ include/net/tcp.h | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/include/net/tcp.h b/include/net/tcp.h
+index 834a775..a4c4176 100644
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -1198,6 +1198,17 @@ static inline unsigned int tcp_packets_in_flight(const struct tcp_sock *tp)
+ 
+ #define TCP_INFINITE_SSTHRESH	0x7fffffff
+ 
++static inline u32 tcp_snd_cwnd(const struct tcp_sock *tp)
++{
++	return tp->snd_cwnd;
++}
++
++static inline void tcp_snd_cwnd_set(struct tcp_sock *tp, u32 val)
++{
++	WARN_ON_ONCE((int)val <= 0);
++	tp->snd_cwnd = val;
++}
++
+ static inline bool tcp_in_slow_start(const struct tcp_sock *tp)
+ {
+ 	return tp->snd_cwnd < tp->snd_ssthresh;
+-- 
+2.48.2

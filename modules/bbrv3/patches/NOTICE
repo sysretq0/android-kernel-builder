@@ -1,0 +1,33 @@
+Vendored BBRv3 backports (WildKernels, fatalcoder524) + sysctl prerequisites
+(upstream Eric Dumazet) + 5.15 cwnd helper (WildKernels action-local).
+
+LICENSE: these patch files are third-party diffs against GPL-2.0-only
+kernel code (net/ipv4) and are distributed here under GPL-2.0-only terms,
+NOT the builder's GPL-3.0-only license (see repo README License section).
+They are applied verbatim to GPL-2.0 kernel trees at build time; no
+relicensing takes place. Do not add SPDX headers inside the .patch files
+(it would corrupt patch application).
+
+Sources (fetched 2026-09-06, verbatim):
+- 0001-net-tcp-backport-BBRv3-to-android{12-5.10,13-5.15,14-6.1,15-6.6}.patch
+  + sysctl_*.patch ............ WildKernels/kernel_patches, common/bbrv3/
+- 0001-net-tcp-backport-BBRv3-to-android14-5.15.patch
+  + 0002-net-tcp-add-tcp_snd_cwnd-*.patch .. WildKernels/GKI_KernelSU_SUSFS,
+  .github/actions/bbrv3/patches/ (no kernel_patches copy exists upstream)
+
+Refresh procedure: re-fetch, diff against these copies, review the delta
+for scope creep (new files outside net/ipv4, Kconfig default flips,
+BBRv1 changes), then commit. setup-bbrv3.sh pins to these copies; upstream
+movement never reaches builds unreviewed.
+
+Vendored but unapplied on LTS-only trees (sublevels only grow):
+- sysctl_*.patch (trees lacking proc_dou8vec_minmax; ours always carry it)
+- 0002-net-tcp-add-tcp_snd_cwnd-*.patch (5.15 sublevel <= 43; ours >> 43).
+  setup-bbrv3.sh applies only the 0001 backports; these stay on disk so
+  the vendor set is complete.
+
+LOCAL FIXES (re-apply after any refresh, do not "restore" to upstream):
+- android15-6.6 0001: TCP_ECN_ECT_PERMANENT 3 -> 32. Upstream typo:
+  ecn_flags layout is OK=1 QUEUE_CWR=2 DEMAND_CWR=4 SEEN=8 LOW=16,
+  so 3 aliases live flags (|= sets OK+QUEUE_CWR spuriously, & test is
+  near-always true); all four sibling backports use 32.

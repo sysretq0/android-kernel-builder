@@ -1,9 +1,12 @@
 {
   "_note": "Module registry: order is pipeline order, keys are the short names variants and dispatch overrides use.",
-  "order": ["kernelsu-next", "nomount", "guard"],
+  "order": ["bbrv3", "kernelsu-next", "nomount", "guard", "ntsync", "susfs"],
   "keys": {
+    "bbrv3": "bbrv3",
     "kernelsu-next": "ksu",
     "nomount": "nomount",
-    "guard": "guard"
+    "guard": "guard",
+    "ntsync": "ntsync",
+    "susfs": "susfs"
   }
 }

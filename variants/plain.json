@@ -4,7 +4,10 @@
     "fragments": true,
     "ksu": { "branch": "dev", "tag": "", "commit": "2482c56952ea36ee13809058c279a2dce075113f" },
     "nomount": { "branch": "dev", "tag": "", "commit": "9122a0bf5705e50d9a0ba12ef662413028f3a877" },
-    "guard": { "branch": "main", "tag": "", "commit": "c12b72944345ad883a36a6e3b95538fbfd399f64" }
+    "guard": { "branch": "main", "tag": "", "commit": "c12b72944345ad883a36a6e3b95538fbfd399f64" },
+    "bbrv3": true,
+    "ntsync": true,
+    "susfs": true
   },
   "branches": [
     { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts", "kind": "build_sh", "extra": ["usb-serial"] },
@@ -14,6 +17,6 @@
     { "branch": "android14-6.1-lts", "manifest": "common-android14-6.1-lts", "kind": "kleaf", "extra": ["ntfs3"] },
     { "branch": "android15-6.6-lts", "manifest": "common-android15-6.6-lts", "kind": "kleaf", "extra": ["ntfs3", "zswap"] },
     { "branch": "android16-6.12-lts", "manifest": "common-android16-6.12-lts", "kind": "kleaf", "extra": ["ntfs3"] },
-    { "branch": "android17-6.18-lts", "manifest": "common-android17-6.18-lts", "kind": "kleaf", "extra": ["ntfs3", "ntsync"] }
+    { "branch": "android17-6.18-lts", "manifest": "common-android17-6.18-lts", "kind": "kleaf", "extra": ["ntfs3"] }
   ]
 }

@@ -1,0 +1,28 @@
+{
+  "_note": "SuSFS sources: one upstream branch per tree (depth-1 clone, tip-pinned; refresh pins when upstream moves). 6.6 suppressed (patch needs newer SELinux API than published GKI; pending green precedent). 6.18 absent (no upstream branch). Plain-dev KSU (no SUSFS hooks) skips everything with no fragment -- suppression would reference a nonexistent symbol.",
+  "android12-5.10-lts": {
+    "source": { "repo": "simonpunk/susfs4ksu", "branch": "gki-android12-5.10",
+                "commit": "7373f8d8cbaee0742d3a18b0ab44d0a51d32cf78" },
+    "files": [{ "patch": "50_add_susfs_in_gki-android12-5.10.patch", "token": "susfs" }] },
+  "android13-5.10-lts": {
+    "source": { "repo": "simonpunk/susfs4ksu", "branch": "gki-android13-5.10",
+                "commit": "f2878eb5c0c9c7082212ef109b9e9e5042fd9fab" },
+    "files": [{ "patch": "50_add_susfs_in_gki-android13-5.10.patch", "token": "susfs" }] },
+  "android13-5.15-lts": {
+    "source": { "repo": "simonpunk/susfs4ksu", "branch": "gki-android13-5.15",
+                "commit": "415e4143ee1dd557c54d2b3d94ef098e5d1236f4" },
+    "files": [{ "patch": "50_add_susfs_in_gki-android13-5.15.patch", "token": "susfs" }] },
+  "android14-5.15-lts": {
+    "source": { "repo": "simonpunk/susfs4ksu", "branch": "gki-android14-5.15",
+                "commit": "b70ff734245d14fb38f718d0f24afd7af9c69004" },
+    "files": [{ "patch": "50_add_susfs_in_gki-android14-5.15.patch", "token": "susfs" }] },
+  "android14-6.1-lts": {
+    "source": { "repo": "simonpunk/susfs4ksu", "branch": "gki-android14-6.1",
+                "commit": "153f88df3be2501d2d33364f8fe05247aecb3cef" },
+    "files": [{ "patch": "50_add_susfs_in_gki-android14-6.1.patch", "token": "susfs" }] },
+  "android15-6.6-lts": { "suppress": "6.6 patch needs newer SELinux API than published GKI provides; gated pending green precedent" },
+  "android16-6.12-lts": {
+    "source": { "repo": "simonpunk/susfs4ksu", "branch": "gki-android16-6.12",
+                "commit": "fb58aef70a9c2aca8f0f85fba14017af94c4e789" },
+    "files": [{ "patch": "50_add_susfs_in_gki-android16-6.12.patch", "token": "susfs" }] }
+}

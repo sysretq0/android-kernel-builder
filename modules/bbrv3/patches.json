@@ -1,0 +1,63 @@
+{
+  "_note": "BBRv3 backports. Branch absent = clean skip (6.12/6.18: no proven patch). Markers are explicit: 0001 hunks touch generic files with no bbr3 string, so derived-token checks do not apply here.",
+  "android12-5.10-lts": {
+    "files": [
+      { "patch": "0001-net-tcp-backport-BBRv3-to-android12-5.10.patch",
+        "markers": [
+          { "file": "net/ipv4/tcp_bbr3.c" },
+          { "file": "net/ipv4/Kconfig", "pattern": "TCP_CONG_BBR3" },
+          { "file": "net/ipv4/Makefile", "pattern": "tcp_bbr3.o" } ] },
+      { "patch": "sysctl_add_proc_dou8vec_minmax.patch",
+        "markers": [{ "file": "include/linux/sysctl.h", "pattern": "proc_dou8vec_minmax" }],
+        "if-missing": "proc_dou8vec_minmax|include/linux/sysctl.h" },
+      { "patch": "sysctl_fix_data-races_in_proc_dou8vec_minmax.patch",
+        "markers": [{ "file": "include/linux/sysctl.h", "pattern": "proc_dou8vec_minmax" }],
+        "if-missing": "proc_dou8vec_minmax|include/linux/sysctl.h" } ] },
+  "android13-5.10-lts": {
+    "files": [
+      { "patch": "0001-net-tcp-backport-BBRv3-to-android12-5.10.patch",
+        "markers": [
+          { "file": "net/ipv4/tcp_bbr3.c" },
+          { "file": "net/ipv4/Kconfig", "pattern": "TCP_CONG_BBR3" },
+          { "file": "net/ipv4/Makefile", "pattern": "tcp_bbr3.o" } ] },
+      { "patch": "sysctl_add_proc_dou8vec_minmax.patch",
+        "markers": [{ "file": "include/linux/sysctl.h", "pattern": "proc_dou8vec_minmax" }],
+        "if-missing": "proc_dou8vec_minmax|include/linux/sysctl.h" },
+      { "patch": "sysctl_fix_data-races_in_proc_dou8vec_minmax.patch",
+        "markers": [{ "file": "include/linux/sysctl.h", "pattern": "proc_dou8vec_minmax" }],
+        "if-missing": "proc_dou8vec_minmax|include/linux/sysctl.h" } ] },
+  "android13-5.15-lts": {
+    "files": [
+      { "patch": "0001-net-tcp-backport-BBRv3-to-android13-5.15.patch",
+        "markers": [
+          { "file": "net/ipv4/tcp_bbr3.c" },
+          { "file": "net/ipv4/Kconfig", "pattern": "TCP_CONG_BBR3" },
+          { "file": "net/ipv4/Makefile", "pattern": "tcp_bbr3.o" } ] },
+      { "patch": "0002-net-tcp-add-tcp_snd_cwnd-and-tcp_snd_cwnd_set-helper-functions.patch",
+        "markers": [{ "file": "net/ipv4/tcp_output.c", "pattern": "tcp_snd_cwnd" }],
+        "if-sublevel-lte": 43 } ] },
+  "android14-5.15-lts": {
+    "files": [
+      { "patch": "0001-net-tcp-backport-BBRv3-to-android14-5.15.patch",
+        "markers": [
+          { "file": "net/ipv4/tcp_bbr3.c" },
+          { "file": "net/ipv4/Kconfig", "pattern": "TCP_CONG_BBR3" },
+          { "file": "net/ipv4/Makefile", "pattern": "tcp_bbr3.o" } ] },
+      { "patch": "0002-net-tcp-add-tcp_snd_cwnd-and-tcp_snd_cwnd_set-helper-functions.patch",
+        "markers": [{ "file": "net/ipv4/tcp_output.c", "pattern": "tcp_snd_cwnd" }],
+        "if-sublevel-lte": 43 } ] },
+  "android14-6.1-lts": {
+    "files": [
+      { "patch": "0001-net-tcp-backport-BBRv3-to-android14-6.1.patch",
+        "markers": [
+          { "file": "net/ipv4/tcp_bbr3.c" },
+          { "file": "net/ipv4/Kconfig", "pattern": "TCP_CONG_BBR3" },
+          { "file": "net/ipv4/Makefile", "pattern": "tcp_bbr3.o" } ] } ] },
+  "android15-6.6-lts": {
+    "files": [
+      { "patch": "0001-net-tcp-backport-BBRv3-to-android15-6.6.patch",
+        "markers": [
+          { "file": "net/ipv4/tcp_bbr3.c" },
+          { "file": "net/ipv4/Kconfig", "pattern": "TCP_CONG_BBR3" },
+          { "file": "net/ipv4/Makefile", "pattern": "tcp_bbr3.o" } ] } ] }
+}

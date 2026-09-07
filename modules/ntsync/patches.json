@@ -1,0 +1,30 @@
+{
+  "_note": "NTSync backport. 5.10 candidates self-select via dry-run (hunk offsets track sublevel bases; guessing rots as LTS tips move). 6.12 absent = BROKEN-gated in-tree, skip with no fragment. 6.18 in-tree = no patch, fragment only.",
+  "android12-5.10-lts": {
+    "files": [
+      { "candidates": ["ntsync_compat_android12-5.10.patch", "ntsync_compat_android12-5.10_A14.patch"],
+        "token": "ntsync" },
+      { "patch": "ntsync_base.patch", "token": "ntsync" } ] },
+  "android13-5.10-lts": {
+    "files": [
+      { "candidates": ["ntsync_compat_android12-5.10.patch", "ntsync_compat_android12-5.10_A14.patch"],
+        "token": "ntsync" },
+      { "patch": "ntsync_base.patch", "token": "ntsync" } ] },
+  "android13-5.15-lts": {
+    "files": [
+      { "patch": "ntsync_compat_android13-5.15.patch", "token": "ntsync" },
+      { "patch": "ntsync_base.patch", "token": "ntsync" } ] },
+  "android14-5.15-lts": {
+    "files": [
+      { "patch": "ntsync_compat_android13-5.15.patch", "token": "ntsync" },
+      { "patch": "ntsync_base.patch", "token": "ntsync" } ] },
+  "android14-6.1-lts": {
+    "files": [
+      { "patch": "ntsync_compat_android14-6.1.patch", "token": "ntsync" },
+      { "patch": "ntsync_base.patch", "token": "ntsync" } ] },
+  "android15-6.6-lts": {
+    "files": [
+      { "patch": "ntsync_compat_android15-6.6.patch", "token": "ntsync" },
+      { "patch": "ntsync_base.patch", "token": "ntsync" } ] },
+  "android17-6.18-lts": { "in-tree": true }
+}
