@@ -8,5 +8,13 @@
     "guard": "guard",
     "ntsync": "ntsync",
     "susfs": "susfs"
+  },
+  "labels": {
+    "bbrv3": "BBRv3",
+    "ksu": "KernelSU-Next",
+    "nomount": "NoMount",
+    "guard": "Partition Guard",
+    "ntsync": "NTSync",
+    "susfs": "SuSFS"
   }
 }

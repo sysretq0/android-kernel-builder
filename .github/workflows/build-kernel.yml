@@ -107,9 +107,21 @@ jobs:
           ls "$GITHUB_WORKSPACE/out-${{ matrix.branch }}"
         working-directory: work
 
+      - name: Collect versions
+        run: python3 ../builder/tools/collect-versions.py "${{ matrix.branch }}"
+        working-directory: work
+
       - name: Upload kernel images
         uses: actions/upload-artifact@v4
         with:
           name: kernel-images-${{ matrix.branch }}
           path: out-${{ matrix.branch }}/
+          if-no-files-found: warn
+
+      - name: Upload versions
+        uses: actions/upload-artifact@v4
+        with:
+          name: versions-${{ matrix.branch }}
+          path: versions-${{ matrix.branch }}/
+          if-no-files-found: warn
           if-no-files-found: warn
