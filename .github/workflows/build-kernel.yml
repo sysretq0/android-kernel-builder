@@ -408,7 +408,7 @@ jobs:
       - name: Upload AnyKernel3 zip
         uses: actions/upload-artifact@v4
         with:
-          name: anykernel
+          name: anykernel-${{ steps.rev.outputs.rev }}
           path: release/
           if-no-files-found: ignore
 
@@ -434,7 +434,7 @@ jobs:
       - name: Fetch AnyKernel3 zips
         uses: actions/download-artifact@v4
         with:
-          name: anykernel
+          pattern: anykernel-*
           path: zips
           merge-multiple: true
       - name: Fetch versions
