@@ -16,12 +16,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-MODULES = ["kernelsu-next", "nomount", "guard"]  # pipeline order
-KEY = {"kernelsu-next": "ksu", "nomount": "nomount", "guard": "guard"}
+builder = Path("../builder")  # cwd=work, checkout is a sibling
+manifest = json.loads((builder / "modules" / "manifest.json").read_text())
+MODULES = manifest["order"]
+KEY = manifest["keys"]
+SHORT_KEYS = set(KEY.values()) | {"fragments"}
 
 variant, branch = sys.argv[1], sys.argv[2]
 override = json.loads(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[3] else {}
-builder = Path("../builder")  # cwd=work, checkout is a sibling
 
 
 def deep_merge(base, patch):
@@ -38,7 +40,7 @@ rec = next(b for b in v["branches"] if b["branch"] == branch)
 defaults = dict(v.get("defaults", {}))
 if isinstance(override.get("defaults"), dict):
     deep_merge(defaults, override["defaults"])
-for k in ("ksu", "nomount", "guard", "fragments"):
+for k in SHORT_KEYS:
     if k in override:  # flat shorthand: {"ksu": {"tag": "v3.3.0"}}
         defaults[k] = override[k]
 branch_over = override.get("branches", {}).get(branch, {})

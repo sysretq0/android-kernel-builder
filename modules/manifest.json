@@ -1,0 +1,9 @@
+{
+  "_note": "Module registry: order is pipeline order, keys are the short names variants and dispatch overrides use.",
+  "order": ["kernelsu-next", "nomount", "guard"],
+  "keys": {
+    "kernelsu-next": "ksu",
+    "nomount": "nomount",
+    "guard": "guard"
+  }
+}
