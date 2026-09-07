@@ -381,17 +381,34 @@ jobs:
             --features "${INT}${FRAGS}" --kconfig "$KCONFIG" --ikconfig "$IKCONFIG" \
             --out "$GITHUB_WORKSPACE/release/anykernel-$ZIPREV.zip"
 
-      - name: Upload artifacts
+      - name: Stage outputs
+        run: |
+          R="${{ steps.rev.outputs.rev }}"
+          mkdir -p img dbg
+          for f in "$GITHUB_WORKSPACE/out-$R"/Image*; do
+            [ -f "$f" ] && cp "$f" "img/$(basename "$f")-$R"
+          done
+          for f in "$GITHUB_WORKSPACE/out-$R"/vmlinux "$GITHUB_WORKSPACE/out-$R"/System.map; do
+            [ -f "$f" ] && cp "$f" "dbg/$(basename "$f")-$R"
+          done
+          ls img dbg 2>/dev/null || true
+      - name: Upload kernel images
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-${{ steps.rev.outputs.rev }}
-          path: out-${{ steps.rev.outputs.rev }}/
+          name: kernel-images
+          path: img/
           if-no-files-found: warn
+      - name: Upload kernel debug
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-debug
+          path: dbg/
+          if-no-files-found: ignore
 
       - name: Upload AnyKernel3 zip
         uses: actions/upload-artifact@v4
         with:
-          name: anykernel-${{ steps.rev.outputs.rev }}
+          name: anykernel
           path: release/
           if-no-files-found: ignore
 
@@ -405,7 +422,7 @@ jobs:
       - name: Upload versions
         uses: actions/upload-artifact@v4
         with:
-          name: versions-${{ steps.rev.outputs.rev }}
+          name: versions
           path: "*-version-${{ steps.rev.outputs.rev }}.txt"
           if-no-files-found: ignore
 
@@ -417,13 +434,13 @@ jobs:
       - name: Fetch AnyKernel3 zips
         uses: actions/download-artifact@v4
         with:
-          pattern: anykernel-*
+          name: anykernel
           path: zips
           merge-multiple: true
       - name: Fetch versions
         uses: actions/download-artifact@v4
         with:
-          pattern: versions-*
+          name: versions
           path: versions
           merge-multiple: true
         continue-on-error: true
