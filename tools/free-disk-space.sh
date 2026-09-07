@@ -171,6 +171,5 @@ fallocate -l 24G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=24576
 chmod 600 /swapfile
 mkswap /swapfile
 swapon /swapfile
-sysctl -w vm.swappiness=100
 free -h
 exit 0

@@ -20,7 +20,7 @@ on:
           - release
       cleanup:
         description: Runner disk cleanup (force ignores the free-space goal)
-        default: auto
+        default: force
         required: false
         type: choice
         options:
