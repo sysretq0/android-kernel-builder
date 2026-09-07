@@ -1,4 +1,4 @@
-name: build
+name: build-kernel
 on:
   workflow_dispatch:
     inputs:
