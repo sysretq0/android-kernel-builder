@@ -81,6 +81,7 @@ enqueue() {
 # need_more: "am I under the free-space goal yet?" Governs whether we keep
 # deleting. 0 = goal already met, delete nothing more.
 TARGET="${FD_TARGET_GIB:-50}"
+FORCE="${FD_FORCE:-0}"  # FD_FORCE=1: remove everything, ignore the goal
 need_more() {
     [ "$(free_bytes)" -lt $(( TARGET * 1024 * 1024 * 1024 )) ]
 }
@@ -91,6 +92,7 @@ report() {
 }
 # stop_if_met: when the goal is reached, stop deleting and report; exits 0.
 stop_if_met() {
+    [ "$FORCE" = 1 ] && return 0
     need_more || { info "free-space target ${TARGET}GiB met; stopping early"; report; exit 0; }
 }
 
@@ -129,7 +131,7 @@ before=$(free_bytes)
 # The slow 100k-tiny-file trees (.NET/Android/hostedtoolcache) are only ever
 # touched if the fast groups did not suffice.
 
-need_more || { info "already free >= ${TARGET}GiB; nothing to remove"; report; exit 0; }
+[ "$FORCE" = 1 ] || need_more || { info "already free >= ${TARGET}GiB; nothing to remove"; report; exit 0; }
 
 # 1) fastest: few large files, seconds to unlink ~14GB.
 remove_one "removed fast runtime/CLI trees" \

@@ -18,6 +18,14 @@ on:
         options:
           - artifact
           - release
+      cleanup:
+        description: Runner disk cleanup (force ignores the free-space goal)
+        default: auto
+        required: false
+        type: choice
+        options:
+          - auto
+          - force
       branch:
         description: Branch to build (or all)
         default: all
@@ -63,8 +71,10 @@ jobs:
           echo "$HOME/.bin" >> "$GITHUB_PATH"
 
       - name: Prepare runner (disk + swap)
+        env:
+          FD_FORCE: ${{ inputs.cleanup == 'force' && '1' || '' }}
         run: |
-          sudo bash "$GITHUB_WORKSPACE/builder/tools/free-disk-space.sh"
+          sudo -E bash "$GITHUB_WORKSPACE/builder/tools/free-disk-space.sh"
           df -h
 
       - name: Sync tree
