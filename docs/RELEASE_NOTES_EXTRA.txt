@@ -1,2 +1,8 @@
 # Free-text notes appended to every release body (and Telegram post).
-# One line per note, Markdown in body / plain in Telegram. Empty = no section.
+# Markdown, passed through verbatim. Comment lines (#...) are ignored.
+# Empty = no Notes section.
+
+- Back up your boot image before flashing — no auto-backup is made.
+- GKI generic: flash the zip matching your kernel version, any device.
+- Flash in recovery or from the KernelSU-Next manager app.
+- Match the manager app to the KSUN versionCode shown per branch.
