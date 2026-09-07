@@ -473,7 +473,7 @@ jobs:
           python3 "$GITHUB_WORKSPACE/builder/tools/render-release.py" \
             ksuversions susfsversions bbrv3versions zips \
             "$GITHUB_WORKSPACE/builder/docs/RELEASE_NOTES_EXTRA.txt" \
-            release-notes.md tg-table.txt
+            release-notes.md tg-table.txt tg-extras.txt
           HL=$(git -C "$GITHUB_WORKSPACE/builder" log -1 --format=%s 2>/dev/null || echo "New build")
           HLESC=$(printf '%s' "$HL" | python3 -c 'import html,sys; print(html.escape(sys.stdin.read()), end="")' | sed 's/[&|\\/]/\\&/g')
           printf '%s\n' "${files[@]##*/}" > /tmp/tg_files.txt
@@ -485,6 +485,7 @@ jobs:
               -e "s|{HEADLINE}|$HLESC|" \
               -e "/{one file per line}/r /tmp/tg_files.txt" -e "/{one file per line}/d" \
               -e "/{TABLE}/r tg-table.txt" -e "/{TABLE}/d" \
+              -e "/{EXTRAS}/r tg-extras.txt" -e "/{EXTRAS}/d" \
               "$GITHUB_WORKSPACE/builder/docs/TELEGRAM_RELEASE.md" > telegram-post.txt
           EXTRA="$GITHUB_WORKSPACE/builder/docs/RELEASE_NOTES_EXTRA.txt"
           if [ -s "$EXTRA" ]; then

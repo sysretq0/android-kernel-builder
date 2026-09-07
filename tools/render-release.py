@@ -17,7 +17,7 @@ import glob
 import os
 import sys
 
-ksu_dir, susfs_dir, bbrv3_dir, zips_dir, extra_file, out_notes, out_table = sys.argv[1:8]
+ksu_dir, susfs_dir, bbrv3_dir, zips_dir, extra_file, out_notes, out_table, out_extras = sys.argv[1:9]
 g = os.environ.get
 tag = g("TAG", "untagged")
 variant = g("VARIANT", "plain")
@@ -52,16 +52,25 @@ def read_ver(pattern, prefix):
     return out
 
 
+def mark(cell):
+    # yes -> check, no (reason) -> cross + bare reason: short phone lines.
+    if cell == "yes":
+        return "\u2713"
+    if cell.startswith("no (") and cell.endswith(")"):
+        return "\u2717 " + cell[4:-1].replace(" ", "-")
+    return cell
+
+
 def off_reason(feature, branch):
     if feature == "susfs":
         if "6.6" in branch:
             return "gated"
         if "6.18" in branch:
-            return "no upstream"
-        return "skipped"
+            return "upstream"
+        return "skip"
     if "6.12" in branch or "6.18" in branch:
-        return "no backport"
-    return "skipped"
+        return "backport"
+    return "skip"
 
 
 ksu = read_ver(os.path.join(ksu_dir, "ksu-version-*.txt"), "ksu-version-")
@@ -147,9 +156,10 @@ with open(out_notes, "w") as f:
 
 tg = []
 for s, kcell, scell, vcell in rows:
-    tg.append("%s: KSU %s \u00b7 SuSFS %s \u00b7 BBRv3 %s" % (s, kcell, scell, vcell))
-if feat:
-    tg.append("+ " + " \u00b7 ".join(feat))
+    tg.append("%s \u00b7 %s" % (s, kcell))
+    tg.append("  SuSFS %s \u00b7 BBRv3 %s" % (mark(scell), mark(vcell)))
+with open(out_extras, "w") as f:
+    f.write(("+ " + " \u00b7 ".join(feat) + "\n") if feat else "\n")
 with open(out_table, "w") as f:
     f.write("\n".join(tg) + "\n")
 print("render-release: %d branches, %d zips" % (len(rows), len(zips)))

@@ -10,6 +10,7 @@
 <pre>
 {TABLE}
 </pre>
+{EXTRAS}
 
 <b>📲 Flash</b>
 • {how to flash}
