@@ -17,7 +17,7 @@ import glob
 import os
 import sys
 
-ksu_dir, susfs_dir, bbrv3_dir, zips_dir, extra_file, out_notes, out_table, out_extras = sys.argv[1:9]
+ksu_dir, susfs_dir, bbrv3_dir, nm_dir, gd_dir, zips_dir, extra_file, out_notes, out_table, out_extras = sys.argv[1:11]
 g = os.environ.get
 tag = g("TAG", "untagged")
 variant = g("VARIANT", "plain")
@@ -105,11 +105,33 @@ for b in branches:
         vcell = "off"
     rows.append((s, kcell, scell, vcell))
 
+def comp_ver(d, prefix):
+    vals = set()
+    for vf in sorted(glob.glob(os.path.join(d, prefix + "-*.txt"))):
+        with open(vf) as f:
+            parts = f.read().split()
+        if len(parts) >= 2:
+            vals.add(parts[1])
+    return sorted(vals)
+
+
+nm_shas = comp_ver(nm_dir, "nomount-version") if nomount_on else []
+gd_shas = comp_ver(gd_dir, "guard-version") if guard_on else []
+
+
+def comp_cell(on, shas, repo):
+    if not on:
+        return "off"
+    if not shas:
+        return "on"
+    if len(shas) == 1:
+        return "on ([%s](https://github.com/%s/commit/%s))" % (shas[0], repo, shas[0])
+    return "on (%s)" % ", ".join(shas)
+
+
+nm_cell = comp_cell(nomount_on, nm_shas, "maxsteeel/nomount")
+gd_cell = comp_cell(guard_on, gd_shas, "sysretq0/android-partition-guard")
 feat = []
-if nomount_on:
-    feat.append("NoMount")
-if guard_on:
-    feat.append("Partition Guard")
 ncell = "yes" if nomount_on else "off"
 gcell = "yes" if guard_on else "off"
 frags = (g("FRAGS_COMMON") or "").split() + (g("FRAGS_BRANCH") or "").split()
@@ -124,10 +146,13 @@ for z in zips:
     md.append("- `%s`" % z)
 md.append("")
 md.append("### ⚙️ Config (`variants/%s.json`)" % variant)
-md.append("| Branch | KernelSU-Next | SuSFS | BBRv3 | NoMount | Guard |")
-md.append("|---|---|---|---|---|---|")
+md.append("| Branch | KernelSU-Next | SuSFS | BBRv3 |")
+md.append("|---|---|---|---|")
 for s, kcell, scell, vcell in rows:
-    md.append("| %s | %s | %s | %s | %s | %s |" % (s, kcell, scell, vcell, ncell, gcell))
+    md.append("| %s | %s | %s | %s |" % (s, kcell, scell, vcell))
+md.append("")
+md.append("| NoMount | %s |" % nm_cell)
+md.append("| Partition Guard | %s |" % gd_cell)
 if feat:
     md.append("")
     md.append(" · ".join(feat))
@@ -158,8 +183,15 @@ tg = []
 for s, kcell, scell, vcell in rows:
     tg.append("%s \u00b7 %s" % (s, kcell))
     tg.append("  SuSFS %s \u00b7 BBRv3 %s" % (mark(scell), mark(vcell)))
+ex = []
+if nomount_on:
+    ex.append("\u2022 NoMount: " + (nm_shas[0] if len(nm_shas) == 1 else "on"))
+if guard_on:
+    ex.append("\u2022 Partition Guard: " + (gd_shas[0] if len(gd_shas) == 1 else "on"))
+if feat:
+    ex.append("+ " + " \u00b7 ".join(feat))
 with open(out_extras, "w") as f:
-    f.write(("+ " + " \u00b7 ".join(feat) + "\n") if feat else "\n")
+    f.write(("\n".join(ex) + "\n") if ex else "\n")
 with open(out_table, "w") as f:
     f.write("\n".join(tg) + "\n")
 print("render-release: %d branches, %d zips" % (len(rows), len(zips)))

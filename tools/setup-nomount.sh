@@ -39,6 +39,7 @@ if [ -n "$REF" ]; then
   echo "setup-nomount: HEAD verified at $GOT ($REF)"
 fi
 
+printf '%s %s\n' "${REF:-}" "$(git -C "$NAME" rev-parse --short HEAD)" > .nomount-version
 mkdir -p .fragments
 cat > .fragments/nomount.config <<'EOF'
 # NoMount VFS redirection (written by setup-nomount.sh; only exists when the

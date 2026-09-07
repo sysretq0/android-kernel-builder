@@ -38,6 +38,7 @@ if [ -n "$REF" ]; then
   echo "setup-partition-guard: HEAD verified at $GOT ($REF)"
 fi
 
+printf '%s %s\n' "${REF:-}" "$(git -C "$NAME" rev-parse --short HEAD)" > .guard-version
 mkdir -p .fragments
 cat > .fragments/guard.config <<'EOF'
 # Partition Guard LSM (written by setup-partition-guard.sh; only exists

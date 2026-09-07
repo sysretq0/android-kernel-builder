@@ -370,6 +370,34 @@ jobs:
           path: ksu-version-${{ steps.rev.outputs.rev }}.txt
           if-no-files-found: ignore
 
+      - name: Stage NoMount version
+        if: needs.resolve.outputs.nomount != 'false'
+        run: |
+          [ -f kernel/.nomount-version ] \
+            && cp kernel/.nomount-version "nomount-version-${{ steps.rev.outputs.rev }}.txt" \
+            || echo "no nomount version file; upload will skip"
+      - name: Upload NoMount version
+        if: needs.resolve.outputs.nomount != 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nomount-version-${{ steps.rev.outputs.rev }}
+          path: nomount-version-${{ steps.rev.outputs.rev }}.txt
+          if-no-files-found: ignore
+
+      - name: Stage Guard version
+        if: needs.resolve.outputs.guard != 'false'
+        run: |
+          [ -f kernel/.guard-version ] \
+            && cp kernel/.guard-version "guard-version-${{ steps.rev.outputs.rev }}.txt" \
+            || echo "no guard version file; upload will skip"
+      - name: Upload Guard version
+        if: needs.resolve.outputs.guard != 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: guard-version-${{ steps.rev.outputs.rev }}
+          path: guard-version-${{ steps.rev.outputs.rev }}.txt
+          if-no-files-found: ignore
+
       - name: Stage SuSFS version
         if: needs.resolve.outputs.susfs != 'false'
         run: |
@@ -430,6 +458,20 @@ jobs:
           path: bbrv3versions
           merge-multiple: true
         continue-on-error: true
+      - name: Fetch NoMount versions
+        uses: actions/download-artifact@v4
+        with:
+          pattern: nomount-version-*
+          path: nomountversions
+          merge-multiple: true
+        continue-on-error: true
+      - name: Fetch Guard versions
+        uses: actions/download-artifact@v4
+        with:
+          pattern: guard-version-*
+          path: guardversions
+          merge-multiple: true
+        continue-on-error: true
       - name: Checkout builder
         uses: actions/checkout@v4
         with:
@@ -471,7 +513,7 @@ jobs:
           REPO="${{ github.repository }}" \
           MANAGER_URL="$MANAGER_URL" MANAGER_PIN="$MANAGER_PIN" \
           python3 "$GITHUB_WORKSPACE/builder/tools/render-release.py" \
-            ksuversions susfsversions bbrv3versions zips \
+            ksuversions susfsversions bbrv3versions nomountversions guardversions zips \
             "$GITHUB_WORKSPACE/builder/docs/RELEASE_NOTES_EXTRA.txt" \
             release-notes.md tg-table.txt tg-extras.txt
           HL=$(git -C "$GITHUB_WORKSPACE/builder" log -1 --format=%s 2>/dev/null || echo "New build")
