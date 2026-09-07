@@ -68,44 +68,7 @@ else
   cp -v "$NAME/kernel_patches/include/linux/susfs_def.h" common/include/linux/susfs_def.h
   SUBLEVEL=$(grep -E "^SUBLEVEL" common/Makefile | awk '{print $3}')
   echo "susfs: sublevel $SUBLEVEL, applying drift fakes for $GKI_VER"
-  (
-  cd common
-  case "$GKI_VER" in
-    gki-android12-5.10)
-      [ "$SUBLEVEL" -le 43 ] && perl -i -pe 's/(int|size_t)\s+this_len\s*=\s*min_t\s*\(\s*\1\s*,/size_t this_len = min_t(size_t,/' fs/proc/base.c || true
-      if [ "$SUBLEVEL" -le 117 ]; then
-        perl -0777 -i -pe 's{(if \(inode\) \{\n)\t\t/\*\n(\t\t \*[^\n]*\n)+\t\t \*/\n}{$1}g; s{^[[:space:]]*u32 mask = mark->mask & IN_ALL_EVENTS;\n}{}m' fs/notify/fdinfo.c
-        perl -i -pe 's/\bmask,\s*mark->ignored_mask/inotify_mark_user_mask(mark)/g' fs/notify/fdinfo.c
-        perl -i -pe 's/ignored_mask:%x/ignored_mask:0/g' fs/notify/fdinfo.c
-        python3 -c 'import re;c=open("fs/notify/fdinfo.c").read();c=re.sub(r"^static void inotify_fdinfo\(struct seq_file \*m, struct fsnotify_mark \*mark\)$",lambda m:"static inline u32 inotify_mark_user_mask(struct fsnotify_mark \*mark)\n{\n\treturn mark->mask & IN_ALL_EVENTS;\n}\n\n"+m.group(0),c,count=1,flags=re.MULTILINE);open("fs/notify/fdinfo.c","w").write(c)'
-      fi ;;
-    gki-android13-5.10)
-      if [ "$SUBLEVEL" -le 107 ]; then
-        perl -0777 -i -pe 's{(if \(inode\) \{\n)\t\t/\*\n(\t\t \*[^\n]*\n)+\t\t \*/\n}{$1}g; s{^[[:space:]]*u32 mask = mark->mask & IN_ALL_EVENTS;\n}{}m' fs/notify/fdinfo.c
-        perl -i -pe 's/\bmask,\s*mark->ignored_mask/inotify_mark_user_mask(mark)/g' fs/notify/fdinfo.c
-        perl -i -pe 's/ignored_mask:%x/ignored_mask:0/g' fs/notify/fdinfo.c
-        python3 -c 'import re;c=open("fs/notify/fdinfo.c").read();c=re.sub(r"^static void inotify_fdinfo\(struct seq_file \*m, struct fsnotify_mark \*mark\)$",lambda m:"static inline u32 inotify_mark_user_mask(struct fsnotify_mark \*mark)\n{\n\treturn mark->mask & IN_ALL_EVENTS;\n}\n\n"+m.group(0),c,count=1,flags=re.MULTILINE);open("fs/notify/fdinfo.c","w").write(c)'
-      fi ;;
-    gki-android13-5.15|gki-android14-5.15)
-      if [ "$SUBLEVEL" -le 41 ]; then
-        sed -i '/^#include <linux\/shmem_fs.h>$/a #include <linux/mnt_idmapping.h>' fs/namespace.c
-        sed -i '/^#include <linux\/compat.h>$/a #include <linux/mnt_idmapping.h>' fs/open.c
-        perl -0777 -i -pe 's{(if \(inode\) \{\n)\t\t/\*\n(\t\t \*[^\n]*\n)+\t\t \*/\n}{$1}g; s{^[[:space:]]*u32 mask = mark->mask & IN_ALL_EVENTS;\n}{}m' fs/notify/fdinfo.c
-        perl -i -pe 's/\bmask,\s*mark->ignored_mask/inotify_mark_user_mask(mark)/g' fs/notify/fdinfo.c
-        perl -i -pe 's/ignored_mask:%x/ignored_mask:0/g' fs/notify/fdinfo.c
-        python3 -c 'import re;c=open("fs/notify/fdinfo.c").read();c=re.sub(r"^static void inotify_fdinfo\(struct seq_file \*m, struct fsnotify_mark \*mark\)$",lambda m:"static inline u32 inotify_mark_user_mask(struct fsnotify_mark \*mark)\n{\n\treturn mark->mask & IN_ALL_EVENTS;\n}\n\n"+m.group(0),c,count=1,flags=re.MULTILINE);open("fs/notify/fdinfo.c","w").write(c)'
-      fi
-      [ "$SUBLEVEL" -ge 197 ] && sed -i '/^#include <trace\/hooks\/blk.h>$/d' fs/namespace.c || true
-      [ "$SUBLEVEL" -ge 197 ] && sed -i '/^#include <trace\/hooks\/mm.h>$/d' fs/proc/task_mmu.c || true ;;
-    gki-android14-6.1)
-      [ "$SUBLEVEL" -le 25 ] && sed -i '/^#include <trace\/events\/oom.h>$/a #include <trace/hooks/sched.h>' fs/proc/base.c || true
-      [ "$SUBLEVEL" -le 141 ] && sed -i '/^#include <linux\/cpufreq_times.h>$/a #include <linux/dma-buf.h>' fs/proc/base.c || true
-      [ "$SUBLEVEL" -ge 157 ] && sed -i '/^#include <trace\/hooks\/blk.h>$/d' fs/namespace.c || true ;;
-    gki-android16-6.12)
-      [ "$SUBLEVEL" -ge 58 ] && sed -i '/^#include <linux\/dma-buf.h>$/d' fs/exec.c || true
-      [ "$SUBLEVEL" -ge 69 ] && sed -i 's/vma_data_pages/vma_pages/g' fs/proc/task_mmu.c || true ;;
-  esac
-  )
+  (cd common && python3 ../../builder/modules/susfs/drift.py "$GKI_VER" "$SUBLEVEL")
   python3 ../builder/tools/apply-patches.py --patch-dir "$NAME/kernel_patches" \
     --patches-json "$MAP" --branch "$BRANCH" --tree common
   restore_include() { # $1 file $2 anchor $3 include $4 header-path
