@@ -60,6 +60,7 @@ for f in $FEATURES; do
 done
 IFS=$OLDIFS
 sed -i -e "/@FEATURE_LINES@/r $stage/features.tmp" -e "/@FEATURE_LINES@/d" "$stage/anykernel.sh"
+rm -f "$stage/features.tmp"
 grep -q "@REV@\|@FEATURE_LINES@\|@DATE@" "$stage/anykernel.sh" && { echo "pack-anykernel: unstamped placeholder left" >&2; exit 1; }
 cp -a "$IMAGE" "$stage/"
 # Resolved kernel .config alongside the image (stock GKI already has

@@ -316,6 +316,7 @@ jobs:
 
       - name: Pack AnyKernel3 zip
         run: |
+          cd kernel
           OUT="$GITHUB_WORKSPACE/out-${{ steps.rev.outputs.rev }}"
           IMG=""
           for cand in Image Image.gz Image.lz4; do
