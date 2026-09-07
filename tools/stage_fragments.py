@@ -43,12 +43,14 @@ want = {}  # sym -> canon line, last file wins
 for frag in frags:
     for n, raw in enumerate(frag.read_text().splitlines(), 1):
         line = raw.strip()
-        if not line or (line.startswith("#") and "CONFIG_" not in line):
+        if not line:
             continue
         if (m := SET_RE.match(line)):
             want[m.group(1)] = f"{m.group(1)}={m.group(2)}"
         elif (m := UNSET_RE.match(line)):
             want[m.group(1)] = f"# {m.group(1)} is not set"
+        elif line.startswith("#"):
+            continue
         else:
             sys.exit(f"FAIL: {frag.name}:{n}: bad fragment line: {raw!r}")
 

@@ -1,0 +1,17 @@
+# Example fragment — copy to <name>.config to enable.
+#
+# Layout: fragments/common/*.config applies to every branch,
+# fragments/<our_branch>/*.config (e.g. android14-6.1-stable/) to one family.
+# Files merge sorted; remove a file to stop applying it.
+#
+# Rules: blank lines, # comments, CONFIG_X=value, or # CONFIG_X is not set.
+# Symbols already effective in gki_defconfig are skipped (dedup).
+#
+# NOTE: this file ends in .example so it is never loaded. Copy it:
+#   cp example.config.example bbr.config
+#
+# e.g. TCP BBR congestion control:
+# CONFIG_TCP_CONG_BBR=y
+#
+# e.g. explicitly disable something:
+# # CONFIG_DEBUG_INFO is not set
