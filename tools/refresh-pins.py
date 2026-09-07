@@ -45,15 +45,19 @@ def main():
         entry["_want"] = susfs_tips[src["branch"]]
     changed = []
 
+    done = set()
+
     def bump(path, old, new, what):
-        nonlocal_changed = changed
+        if (path, old, new) in done:
+            return  # same global replace already applied for this file
+        done.add((path, old, new))
         text = open(path).read()
         if old == new or old not in text:
-            if old != new:
-                print(f"WARN: {what} old sha absent in {path}")
+            if old != new and new not in text:
+                print(f"WARN: {what}: neither old nor new sha in {path}")
             return
         open(path, "w").write(text.replace(old, new))
-        nonlocal_changed.append(f"{path} {what}: {old[:12]} -> {new[:12]}")
+        changed.append(f"{path} {what}: {old[:12]} -> {new[:12]}")
 
     for path in ("variants/plain.json", "variants/susfs.json"):
         v = json.load(open(path))
