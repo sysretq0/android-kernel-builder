@@ -8,7 +8,7 @@
     "bbrv3": true,
     "ntsync": true,
     "susfs": true,
-    "mgate": { "branch": "main", "tag": "", "commit": "a4051d868d3b9fc153bf3a8701dc4e4c15fcbb40" }
+    "mgate": { "branch": "main", "tag": "", "commit": "565c984479183336867848129fe67b0fee4347c6" }
   },
   "branches": [
     { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts", "kind": "build_sh", "extra": ["usb-serial"] },
