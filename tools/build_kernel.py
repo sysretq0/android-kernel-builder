@@ -41,11 +41,12 @@ if kind == "build_sh":
         "export KERNEL_DIR=common\n"
         ". ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki.aarch64\n"
         "export POST_DEFCONFIG_CMDS='"
+        "if [ -f ${ROOT_DIR}/modular.fragment ]; then "
         "${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh"
         " -m -O ${OUT_DIR} ${OUT_DIR}/.config"
         " ${ROOT_DIR}/modular.fragment"
         " && make -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR}"
-        " ARCH=${ARCH} olddefconfig'\n")
+        " ARCH=${ARCH} olddefconfig; fi'\n")
     run("bash", "build/build.sh",
         env={**os.environ, "BUILD_CONFIG": "build.config.portable"})
 elif kind == "kleaf":

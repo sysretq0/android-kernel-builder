@@ -24,6 +24,9 @@ builder = Path("../builder")  # cwd=work, checkout is a sibling
 
 v = json.loads((builder / "variants" / f"{variant}.json").read_text())
 rec = next(b for b in v["branches"] if b["branch"] == branch)
+if not v.get("defaults", {}).get("fragments", True):
+    print("fragments off; stock tree")
+    sys.exit(0)
 
 frags = sorted((builder / "fragments" / "common").glob("*.config"))
 for name in rec.get("extra", []):
