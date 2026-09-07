@@ -1,0 +1,16 @@
+{
+  "defaults": {
+    "our_revision": "lts",
+    "fragments": true
+  },
+  "branches": [
+    { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts", "kind": "build_sh" },
+    { "branch": "android13-5.10-lts", "manifest": "common-android13-5.10-lts", "kind": "build_sh" },
+    { "branch": "android13-5.15-lts", "manifest": "common-android13-5.15-lts", "kind": "build_sh" },
+    { "branch": "android14-5.15-lts", "manifest": "common-android14-5.15-lts", "kind": "kleaf" },
+    { "branch": "android14-6.1-lts",  "manifest": "common-android14-6.1-lts",  "kind": "kleaf" },
+    { "branch": "android15-6.6-lts",  "manifest": "common-android15-6.6-lts",  "kind": "kleaf" },
+    { "branch": "android16-6.12-lts", "manifest": "common-android16-6.12-lts", "kind": "kleaf" },
+    { "branch": "android17-6.18-lts", "manifest": "common-android17-6.18-lts", "kind": "kleaf" }
+  ]
+}

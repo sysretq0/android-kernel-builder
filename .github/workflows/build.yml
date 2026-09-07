@@ -1,0 +1,81 @@
+name: build
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        default: plain
+        required: true
+      branch:
+        default: all
+        required: false
+
+jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.r.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: r
+        run: python3 tools/matrix.py "${{ inputs.variant }}" "${{ inputs.branch }}"
+
+  build:
+    needs: resolve
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.resolve.matrix) }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder
+
+      - name: Install repo tool
+        run: |
+          mkdir -p ~/.bin
+          curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/.bin/repo
+          chmod +x ~/.bin/repo
+          echo "$HOME/.bin" >> "$GITHUB_PATH"
+
+      - name: Sync tree
+        run: |
+          mkdir -p work
+          repo init -u https://android.googlesource.com/kernel/manifest \
+            -b "${{ matrix.manifest }}" --depth=1 --groups=all
+          repo sync -c --no-tags -j"$(nproc)"
+        working-directory: work
+
+      - name: Stage added config
+        run: python3 builder/tools/stage_fragments.py "${{ matrix.kind }}"
+
+      - name: Commit tree
+        run: |
+          git add -A
+          git -c user.email=builder -c user.name=builder commit -qm tree
+        working-directory: work
+
+      - name: Build (build.sh era)
+        if: matrix.kind == 'build_sh'
+        run: bash build/build.sh
+        working-directory: work
+        env:
+          BUILD_CONFIG: common/build.config.gki.aarch64
+
+      - name: Build (Kleaf era)
+        if: matrix.kind == 'kleaf'
+        run: tools/bazel build //common:kernel_aarch64_dist
+        working-directory: work
+
+      - name: Collect images
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/out-${{ matrix.branch }}"
+          find out bazel-bin -name 'Image*' -type f -exec cp {} "$GITHUB_WORKSPACE/out-${{ matrix.branch }}/" \; 2>/dev/null || true
+          ls "$GITHUB_WORKSPACE/out-${{ matrix.branch }}"
+        working-directory: work
+
+      - name: Upload kernel images
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-images-${{ matrix.branch }}
+          path: out-${{ matrix.branch }}/
+          if-no-files-found: warn
