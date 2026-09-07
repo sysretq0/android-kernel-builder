@@ -6,8 +6,20 @@ on:
         default: plain
         required: true
       branch:
+        description: Branch to build (or all)
         default: all
         required: false
+        type: choice
+        options:
+          - all
+          - android12-5.10-lts
+          - android13-5.10-lts
+          - android13-5.15-lts
+          - android14-5.15-lts
+          - android14-6.1-lts
+          - android15-6.6-lts
+          - android16-6.12-lts
+          - android17-6.18-lts
 
 jobs:
   resolve:
