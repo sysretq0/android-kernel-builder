@@ -65,6 +65,11 @@ jobs:
           chmod +x ~/.bin/repo
           echo "$HOME/.bin" >> "$GITHUB_PATH"
 
+      - name: Prepare runner (disk + swap)
+        run: |
+          sudo bash "$GITHUB_WORKSPACE/builder/tools/free-disk-space.sh"
+          df -h
+
       - name: Sync tree
         run: |
           mkdir -p work && cd work
