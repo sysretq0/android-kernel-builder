@@ -7,7 +7,8 @@
     "guard": { "branch": "main", "tag": "", "commit": "c12b72944345ad883a36a6e3b95538fbfd399f64" },
     "bbrv3": true,
     "ntsync": true,
-    "susfs": true
+    "susfs": true,
+    "mgate": { "branch": "main", "tag": "", "commit": "ea3a7390d86626eddbe45e999778af74235a91e6" }
   },
   "branches": [
     { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts", "kind": "build_sh", "extra": ["usb-serial"] },
