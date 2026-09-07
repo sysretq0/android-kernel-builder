@@ -343,10 +343,14 @@ jobs:
           fi
           echo "zip revision: $ZIPREV"
           INT=""; [ "${{ needs.resolve.outputs.ksu }}" = "true" ] && INT="${INT}KernelSU-Next:";
-          [ "${{ needs.resolve.outputs.susfs }}" = "true" ] && INT="${INT}SuSFS:";
+          [ -f kernel/.susfs-version ] && INT="${INT}SuSFS:";
+          [ -f kernel/.bbrv3-version ] && INT="${INT}BBRv3:";
+          { [ -f kernel/.ntsync-version ] || [ -f "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}/ntsync.config" ]; } && [ "${{ needs.resolve.outputs.ntsync }}" = "true" ] && INT="${INT}NTSync:";
           [ "${{ needs.resolve.outputs.nomount }}" = "true" ] && INT="${INT}NoMount:";
           [ "${{ needs.resolve.outputs.guard }}" = "true" ] && INT="${INT}Partition Guard:";
           FRAGS=$(cd "$GITHUB_WORKSPACE/builder/fragments/common" && ls *.config 2>/dev/null | sed 's/\.config$//' | paste -sd: -)
+          BFRAGS=$(cd "$GITHUB_WORKSPACE/builder/fragments/${{ matrix.our_branch }}" 2>/dev/null && ls *.config 2>/dev/null | sed 's/\.config$//' | paste -sd: - || true)
+          [ -n "$BFRAGS" ] && FRAGS="${FRAGS}:${BFRAGS}"
           bash "$GITHUB_WORKSPACE/builder/tools/pack-anykernel.sh" \
             --image "$IMG" --rev "$ZIPREV" \
             --features "${INT}${FRAGS}" --kconfig "$KCONFIG" --ikconfig "$IKCONFIG" \
