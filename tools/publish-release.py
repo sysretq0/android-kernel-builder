@@ -7,6 +7,7 @@ Usage: publish-release.py --tag TAG --variant VARIANT --repo OWNER/REPO
 Env: GH_TOKEN (gh cli), TG_TOKEN + TG_CHAT (optional Telegram).
 """
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -28,6 +29,41 @@ ap.add_argument("--zips", required=True)
 ap.add_argument("--versions", required=True)
 ap.add_argument("--builder", required=True)
 a = ap.parse_args()
+
+man = json.loads(open(f"{a.builder}/modules/manifest.json").read())
+mgr = man.get("manager", {})
+if mgr:
+    from collections import Counter
+    shas = Counter()
+    for d in Path(a.versions).glob("versions-*"):
+        for kf in d.glob(f"{mgr['module']}.txt"):
+            parts = kf.read_text().split()
+            if len(parts) > 1:
+                shas[parts[1]] += 1
+    if shas:
+        sha = shas.most_common(1)[0][0]
+        try:
+            wf = run(["gh", "api",
+                        f"repos/{mgr['repo']}/actions/workflows",
+                        "--jq", ".workflows[] | "
+                        f"select(.name==\"{mgr['workflow']}\") | .id"],
+                       capture_output=True, text=True).stdout.strip()
+            runs = run(["gh", "api",
+                          f"repos/{mgr['repo']}/actions/workflows/"
+                          f"{wf}/runs?branch=dev&status=success&per_page=20",
+                          "--jq",
+                          f".workflow_runs[] | select(.head_sha | "
+                          f"startswith(\"{sha}\")) | .id"],
+                         capture_output=True, text=True).stdout.strip()
+            rid = runs.splitlines()[0] if runs.strip() else ""
+            url = (f"https://nightly.link/{mgr['repo']}/actions/runs/"
+                   f"{rid}/{mgr['artifact']}.zip" if rid else
+                   f"https://nightly.link/{mgr['repo']}/workflows/"
+                   f"{mgr['workflow']}/dev/{mgr['artifact']}.zip")
+            Path("manager-url.txt").write_text(url + "\n")
+            print(f"manager: {url}")
+        except Exception as e:
+            print(f"manager lookup failed (non-fatal): {e}")
 
 run(sys.executable, f"{a.builder}/tools/render-release.py",
     a.versions, a.builder, a.variant, a.tag, a.zips,

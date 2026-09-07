@@ -38,14 +38,14 @@ for d in sorted(Path(vroot).glob("versions-*")):
 def cell(key, parts):
     if not parts:
         return "off"
-    if key == "ksu":
+    if labels.get(key, {}).get("detail") == "version":
         tag = parts[0] if parts else "?"
         vcode = parts[3] if len(parts) > 3 else "?"
         return f"{tag} ({vcode})"
     return "yes"
 
 
-hdr = "| branch | " + " | ".join(labels[c] for c in cols) + " |"
+hdr = "| branch | " + " | ".join(labels[c]["label"] for c in cols) + " |"
 sep = "|" + "|".join(["---"] * (len(cols) + 1)) + "|"
 lines = [f"# {tag} ({variant})", "", hdr, sep]
 tg = [tag, ""]
@@ -53,15 +53,29 @@ for branch in sorted(branches):
     rev, feats = branches[branch]
     row = [branch] + [cell(c, feats.get(c)) for c in cols]
     lines.append("| " + " | ".join(row) + " |")
-    marks = " ".join(f"{c}={'y' if feats.get(c) else '-'}"
-                     for c in cols if c != "ksu")
-    ksu = cell("ksu", feats.get("ksu"))
-    tg.append(f"{branch}: KSU {ksu} {marks}".strip())
+    det = [c for c in cols if labels.get(c, {}).get("detail") == "version"]
+    short = branch.removeprefix("android").removesuffix("-lts")
+    base = " ".join(f"{labels[c].get('short', c)} "
+                       f"{cell(c, feats.get(c))}" for c in det)
+    extras = " ".join(f"+{c}" for c in cols
+                       if c not in det and feats.get(c))
+    tg.append(f"{short}: {base} {extras}".strip())
 
 ziplist = sorted(Path(zips).glob("*.zip"))
 dl = "\n".join(f"- `{z.name}`" for z in ziplist)
+extra = builder / "docs" / "RELEASE_NOTES_EXTRA.txt"
+footnotes = [l for l in extra.read_text().splitlines()
+             if l.strip() and not l.startswith("#")] if extra.is_file() else []
 notes = "\n".join(lines) + "\n\n## Downloads\n" + (dl or "(no zips)") + "\n"
+mgr = Path("manager-url.txt")
+if mgr.is_file() and mgr.read_text().strip():
+    notes += f"\n[Manager APK]({mgr.read_text().strip()})\n"
+if footnotes:
+    notes += "\n## Notes\n" + "\n".join(f"- {l}" for l in footnotes) + "\n"
 Path(out_notes).write_text(notes)
-Path(out_table).write_text("```\n" + "\n".join(tg) + "\n```\n")
+tgtext = "\n".join(tg)
+if footnotes:
+    tgtext += "\n\n" + "\n".join(footnotes)
+Path(out_table).write_text("```\n" + tgtext + "\n```\n")
 print(f"render-release: {len(branches)} branches, "
       f"{len(ziplist)} zips -> {out_notes} {out_table}")

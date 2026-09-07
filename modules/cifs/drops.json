@@ -1,0 +1,8 @@
+{"_note": "Stale module-outs dropped when our built-in posture orphans a .ko declaration. Version + selector gates re-checked at run time; YAML never names versions or symbols.",
+  "drops": [
+    { "kversion": "6.12", "when-symbol": "CONFIG_CIFS",
+      "drop": ["fs/netfs/netfs.ko"] },
+    { "kversion": "6.18", "when-symbol": "CONFIG_CIFS",
+      "drop": ["fs/netfs/netfs.ko", "lib/crypto/libarc4.ko"] }
+  ]
+}

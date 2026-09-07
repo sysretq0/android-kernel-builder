@@ -9,12 +9,14 @@
     "ntsync": "ntsync",
     "susfs": "susfs"
   },
+  "manager": { "module": "ksu", "repo": "KernelSU-Next/KernelSU-Next",
+               "workflow": "build-manager-ci", "artifact": "manager" },
   "labels": {
-    "bbrv3": "BBRv3",
-    "ksu": "KernelSU-Next",
-    "nomount": "NoMount",
-    "guard": "Partition Guard",
-    "ntsync": "NTSync",
-    "susfs": "SuSFS"
+    "bbrv3": { "label": "BBRv3" },
+    "ksu": { "label": "KernelSU-Next", "short": "KSUN", "detail": "version" },
+    "nomount": { "label": "NoMount" },
+    "guard": { "label": "Partition Guard" },
+    "ntsync": { "label": "NTSync" },
+    "susfs": { "label": "SuSFS" }
   }
 }

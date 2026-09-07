@@ -1,0 +1,2 @@
+# Free-text notes appended to every release body (and Telegram post).
+# One line per note, Markdown in body / plain in Telegram. Empty = no section.

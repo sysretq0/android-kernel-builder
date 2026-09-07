@@ -22,15 +22,18 @@ a = ap.parse_args()
 builder = Path(a.builder)
 vd = Path(a.versions_dir)
 
-labels = json.loads((builder / "modules" / "manifest.json").read_text())["labels"]
+man = json.loads((builder / "modules" / "manifest.json").read_text())
+labels, order, keys = man["labels"], man["order"], man["keys"]
+present = {kf.stem for kf in vd.glob("*.txt")} - {"rev", "branch", "version"}
+unknown = present - set(labels)
+if unknown:
+    raise SystemExit(f"FAIL: version keys with no manifest label: {sorted(unknown)}")
 feats = []
-for kf in sorted(vd.glob("*.txt")):
-    if kf.name in ("rev.txt", "branch.txt", "version.txt"):
-        continue
-    key = kf.stem
-    if key not in labels:
-        raise SystemExit(f"FAIL: version key {key!r} has no manifest label")
-    feats.append(f"{labels[key]} {kf.read_text().split()[0]}")
+for mod in order:
+    key = keys[mod]
+    if key in present:
+        feats.append(f"{labels[key]['label']} "
+                     f"{(vd / f'{key}.txt').read_text().split()[0]}")
 
 v = json.loads((builder / "variants" / f"{a.variant}.json").read_text())
 rec = next(b for b in v["branches"] if b["branch"] == a.branch)
