@@ -9,6 +9,14 @@ on:
         type: choice
         options:
           - plain
+      destination:
+        description: Where the outputs go
+        default: artifact
+        required: true
+        type: choice
+        options:
+          - artifact
+          - release
       branch:
         description: Branch to build (or all)
         default: all
