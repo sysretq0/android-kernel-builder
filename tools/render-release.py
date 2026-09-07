@@ -17,7 +17,9 @@ import glob
 import os
 import sys
 
-ksu_dir, susfs_dir, bbrv3_dir, nm_dir, gd_dir, nt_dir, mg_dir, zips_dir, extra_file, out_notes, out_table, out_extras = sys.argv[1:13]
+ver_dir = sys.argv[1]
+ksu_dir = susfs_dir = bbrv3_dir = nm_dir = gd_dir = nt_dir = mg_dir = ver_dir
+zips_dir, extra_file, out_notes, out_table, out_extras = sys.argv[2:7]
 g = os.environ.get
 tag = g("TAG", "untagged")
 variant = g("VARIANT", "plain")

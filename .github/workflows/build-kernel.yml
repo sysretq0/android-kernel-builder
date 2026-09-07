@@ -395,102 +395,18 @@ jobs:
           path: release/
           if-no-files-found: ignore
 
-      - name: Stage KSU version
-        if: needs.resolve.outputs.ksu != 'false'
+      - name: Stage versions
         run: |
-          [ -f kernel/.ksu-version ] \
-            && cp kernel/.ksu-version "ksu-version-${{ steps.rev.outputs.rev }}.txt" \
-            || echo "no ksu version file; upload will skip"
-      - name: Upload KSU version
-        if: needs.resolve.outputs.ksu != 'false'
+          R="${{ steps.rev.outputs.rev }}"
+          for f in ksu susfs bbrv3 ntsync nomount guard mgate; do
+            [ -f "kernel/.$f-version" ] && cp "kernel/.$f-version" "$f-version-$R.txt" || echo "no $f version file; upload will skip"
+          done
+          ls *-version-*.txt 2>/dev/null || true
+      - name: Upload versions
         uses: actions/upload-artifact@v4
         with:
-          name: ksu-version-${{ steps.rev.outputs.rev }}
-          path: ksu-version-${{ steps.rev.outputs.rev }}.txt
-          if-no-files-found: ignore
-
-      - name: Stage NoMount version
-        if: needs.resolve.outputs.nomount != 'false'
-        run: |
-          [ -f kernel/.nomount-version ] \
-            && cp kernel/.nomount-version "nomount-version-${{ steps.rev.outputs.rev }}.txt" \
-            || echo "no nomount version file; upload will skip"
-      - name: Upload NoMount version
-        if: needs.resolve.outputs.nomount != 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: nomount-version-${{ steps.rev.outputs.rev }}
-          path: nomount-version-${{ steps.rev.outputs.rev }}.txt
-          if-no-files-found: ignore
-
-      - name: Stage Guard version
-        if: needs.resolve.outputs.guard != 'false'
-        run: |
-          [ -f kernel/.guard-version ] \
-            && cp kernel/.guard-version "guard-version-${{ steps.rev.outputs.rev }}.txt" \
-            || echo "no guard version file; upload will skip"
-      - name: Upload Guard version
-        if: needs.resolve.outputs.guard != 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: guard-version-${{ steps.rev.outputs.rev }}
-          path: guard-version-${{ steps.rev.outputs.rev }}.txt
-          if-no-files-found: ignore
-
-      - name: Stage ModuleGate version
-        if: needs.resolve.outputs.mgate != 'false'
-        run: |
-          [ -f kernel/.mgate-version ] \
-            && cp kernel/.mgate-version "mgate-version-${{ steps.rev.outputs.rev }}.txt" \
-            || echo "no mgate version file; upload will skip"
-      - name: Upload ModuleGate version
-        if: needs.resolve.outputs.mgate != 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mgate-version-${{ steps.rev.outputs.rev }}
-          path: mgate-version-${{ steps.rev.outputs.rev }}.txt
-          if-no-files-found: ignore
-
-      - name: Stage SuSFS version
-        if: needs.resolve.outputs.susfs != 'false'
-        run: |
-          [ -f kernel/.susfs-version ] \
-            && cp kernel/.susfs-version "susfs-version-${{ steps.rev.outputs.rev }}.txt" \
-            || echo "susfs gated or skipped here; upload will skip"
-      - name: Upload SuSFS version
-        if: needs.resolve.outputs.susfs != 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: susfs-version-${{ steps.rev.outputs.rev }}
-          path: susfs-version-${{ steps.rev.outputs.rev }}.txt
-          if-no-files-found: ignore
-
-      - name: Stage BBRv3 version
-        if: needs.resolve.outputs.bbrv3 != 'false'
-        run: |
-          [ -f kernel/.bbrv3-version ] \
-            && cp kernel/.bbrv3-version "bbrv3-version-${{ steps.rev.outputs.rev }}.txt" \
-            || echo "bbrv3 gated here (no proven backport); upload will skip"
-      - name: Upload BBRv3 version
-        if: needs.resolve.outputs.bbrv3 != 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: bbrv3-version-${{ steps.rev.outputs.rev }}
-          path: bbrv3-version-${{ steps.rev.outputs.rev }}.txt
-          if-no-files-found: ignore
-
-      - name: Stage NTSync version
-        if: needs.resolve.outputs.ntsync != 'false'
-        run: |
-          [ -f kernel/.ntsync-version ] \
-            && cp kernel/.ntsync-version "ntsync-version-${{ steps.rev.outputs.rev }}.txt" \
-            || echo "ntsync in-tree or skipped here; upload will skip"
-      - name: Upload NTSync version
-        if: needs.resolve.outputs.ntsync != 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ntsync-version-${{ steps.rev.outputs.rev }}
-          path: ntsync-version-${{ steps.rev.outputs.rev }}.txt
+          name: versions-${{ steps.rev.outputs.rev }}
+          path: "*-version-${{ steps.rev.outputs.rev }}.txt"
           if-no-files-found: ignore
 
   release:
@@ -504,53 +420,11 @@ jobs:
           pattern: anykernel-*
           path: zips
           merge-multiple: true
-      - name: Fetch KSU versions
+      - name: Fetch versions
         uses: actions/download-artifact@v4
         with:
-          pattern: ksu-version-*
-          path: ksuversions
-          merge-multiple: true
-        continue-on-error: true
-      - name: Fetch SuSFS versions
-        uses: actions/download-artifact@v4
-        with:
-          pattern: susfs-version-*
-          path: susfsversions
-          merge-multiple: true
-        continue-on-error: true
-      - name: Fetch BBRv3 versions
-        uses: actions/download-artifact@v4
-        with:
-          pattern: bbrv3-version-*
-          path: bbrv3versions
-          merge-multiple: true
-        continue-on-error: true
-      - name: Fetch NTSync versions
-        uses: actions/download-artifact@v4
-        with:
-          pattern: ntsync-version-*
-          path: ntsyncversions
-          merge-multiple: true
-        continue-on-error: true
-      - name: Fetch NoMount versions
-        uses: actions/download-artifact@v4
-        with:
-          pattern: nomount-version-*
-          path: nomountversions
-          merge-multiple: true
-        continue-on-error: true
-      - name: Fetch Guard versions
-        uses: actions/download-artifact@v4
-        with:
-          pattern: guard-version-*
-          path: guardversions
-          merge-multiple: true
-        continue-on-error: true
-      - name: Fetch ModuleGate versions
-        uses: actions/download-artifact@v4
-        with:
-          pattern: mgate-version-*
-          path: mgateversions
+          pattern: versions-*
+          path: versions
           merge-multiple: true
         continue-on-error: true
       - name: Checkout builder
@@ -574,7 +448,7 @@ jobs:
           if [ "${{ needs.resolve.outputs.ksu }}" != "false" ]; then
             WID=$(gh api repos/KernelSU-Next/KernelSU-Next/actions/workflows --jq '.workflows[] | select(.path==".github/workflows/build-manager-ci.yml") | .id' 2>/dev/null || true)
             if [ -n "$WID" ]; then
-              for PSHA in $(for vf in ksuversions/ksu-version-*.txt; do [ -f "$vf" ] && awk '{print $2}' "$vf"; done | sort | uniq -c | sort -rn | awk '{print $2}'); do
+              for PSHA in $(for vf in versions/ksu-version-*.txt; do [ -f "$vf" ] && awk '{print $2}' "$vf"; done | sort | uniq -c | sort -rn | awk '{print $2}'); do
                 RID=$(gh api "repos/KernelSU-Next/KernelSU-Next/actions/workflows/$WID/runs?branch=dev&status=success&per_page=100" --jq ".workflow_runs[] | select(.head_sha | startswith(\"$PSHA\")) | .id" 2>/dev/null | head -1 || true)
                 if [ -n "$RID" ]; then
                   MANAGER_URL="https://nightly.link/KernelSU-Next/KernelSU-Next/actions/runs/$RID/manager.zip"
@@ -594,7 +468,7 @@ jobs:
           REPO="${{ github.repository }}" \
           MANAGER_URL="$MANAGER_URL" MANAGER_PIN="$MANAGER_PIN" \
           python3 "$GITHUB_WORKSPACE/builder/tools/render-release.py" \
-            ksuversions susfsversions bbrv3versions nomountversions guardversions mgateversions ntsyncversions zips \
+            versions zips \
             "$GITHUB_WORKSPACE/builder/docs/RELEASE_NOTES_EXTRA.txt" \
             release-notes.md tg-table.txt tg-extras.txt
           HL=$(git -C "$GITHUB_WORKSPACE/builder" log -1 --format=%s 2>/dev/null || echo "New build")

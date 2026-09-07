@@ -18,6 +18,7 @@ TRACK = [
     ("https://github.com/pershoot/KernelSU-Next.git", "dev"),
     ("https://github.com/maxsteeel/nomount.git", "dev"),
     ("https://github.com/sysretq0/android-partition-guard.git", "main"),
+    ("https://github.com/sysretq0/android-module-gate.git", "main"),
 ]
 PLAIN_KSU = "dev"
 SUSFS_SPECIAL = ("android15-6.6-lts", "android17-6.18-lts")
@@ -38,6 +39,7 @@ def main():
     dev = tips[(TRACK[1][0], "dev")]
     nomount = tips[(TRACK[2][0], "dev")]
     guard = tips[(TRACK[3][0], "main")]
+    mgate = tips[(TRACK[4][0], "main")]
     changed = []
     for path in ("variants/plain.json", "variants/susfs.json"):
         with open(path) as f:
@@ -47,7 +49,8 @@ def main():
             want_ksu = dev if (is_plain or b["branch"] in SUSFS_SPECIAL) else dev_susfs
             for key, want in (("ksu_ref", want_ksu),
                               ("nomount_ref", nomount),
-                              ("guard_ref", guard)):
+                              ("guard_ref", guard),
+                              ("mgate_ref", mgate)):
                 if b.get(key) != want:
                     changed.append("%s %s %s: %s -> %s"
                                    % (path, b["branch"], key, b.get(key), want[:8]))
