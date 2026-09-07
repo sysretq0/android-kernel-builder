@@ -42,18 +42,12 @@ jobs:
       - uses: actions/checkout@v4
       - id: r
         run: python3 tools/matrix.py "${{ inputs.variant }}" "${{ inputs.branch }}"
-      - name: Prove handoff (temporary)
-        run: |
-          echo '--- GITHUB_OUTPUT tail ---'
-          tail -3 "$GITHUB_OUTPUT"
-          echo '--- step output head ---'
-          echo '${{ steps.r.outputs.matrix }}' | head -c 300; echo
 
   build:
     needs: resolve
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.resolve.matrix) }}
+      matrix: ${{ fromJSON(needs.resolve.outputs.matrix) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
