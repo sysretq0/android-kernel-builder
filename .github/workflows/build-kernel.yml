@@ -9,6 +9,7 @@ on:
         type: choice
         options:
           - plain
+          - susfs
       destination:
         description: Where the outputs go
         default: artifact
