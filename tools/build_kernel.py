@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""Logic: build the tree for either era. Runs with cwd=work.
+"""Logic: commit the tree, then build it for either era. cwd=work.
 
-Control (which step, when) stays in the workflow; era dispatch lives
-here so the workflow holds one Build step instead of two.
+- Commit first (anti-`-dirty`), tolerant no-op when clean.
+- build.sh era: generated build.config.portable sources the GKI config
+  then merges work/modular.fragment at POST_DEFCONFIG time into
+  OUT_DIR/.config. The committed defconfig stays pristine so the
+  savedefconfig byte-match check passes.
+- Kleaf era: --defconfig_fragment=//common:builder_fragments when staged.
 """
 import os
 import subprocess
@@ -33,8 +37,17 @@ def commit_tree():
 commit_tree()
 
 if kind == "build_sh":
+    Path("build.config.portable").write_text(
+        "export KERNEL_DIR=common\n"
+        ". ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki.aarch64\n"
+        "export POST_DEFCONFIG_CMDS='"
+        "${ROOT_DIR}/${KERNEL_DIR}/scripts/kconfig/merge_config.sh"
+        " -m -O ${OUT_DIR} ${OUT_DIR}/.config"
+        " ${ROOT_DIR}/modular.fragment"
+        " && make -C ${ROOT_DIR}/${KERNEL_DIR} O=${OUT_DIR}"
+        " ARCH=${ARCH} olddefconfig'\n")
     run("bash", "build/build.sh",
-        env={**os.environ, "BUILD_CONFIG": "common/build.config.gki.aarch64"})
+        env={**os.environ, "BUILD_CONFIG": "build.config.portable"})
 elif kind == "kleaf":
     cmd = ["tools/bazel", "build"]
     if Path("common/builder_fragments.config").exists():
