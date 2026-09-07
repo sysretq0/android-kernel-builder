@@ -99,6 +99,8 @@ jobs:
         run: |
           mkdir -p "$GITHUB_WORKSPACE/out-${{ matrix.branch }}"
           find out bazel-bin -name 'Image*' -type f -exec cp {} "$GITHUB_WORKSPACE/out-${{ matrix.branch }}/" \; 2>/dev/null || true
+          CFG=$(find out bazel-bin/common -maxdepth 6 -name .config 2>/dev/null | sort | head -1 || true)
+          [ -n "$CFG" ] && cp "$CFG" "$GITHUB_WORKSPACE/out-${{ matrix.branch }}/kernel.config" || echo "no resolved .config found"
           ls "$GITHUB_WORKSPACE/out-${{ matrix.branch }}"
         working-directory: work
 
@@ -115,8 +117,10 @@ jobs:
           done
           [ -n "$IMG" ] || { echo "no kernel image; skipping pack"; exit 0; }
           FEATS=$(python3 builder/tools/ak3-features.py --versions-dir "versions-${{ matrix.branch }}" --builder builder --variant "${{ inputs.variant }}" --branch "${{ matrix.branch }}")
+          KC=""; [ -f "out-${{ matrix.branch }}/kernel.config" ] && KC="--kconfig out-${{ matrix.branch }}/kernel.config"
+          # shellcheck disable=SC2086
           bash builder/tools/pack-anykernel.sh --image "$IMG" --rev "$REV" \
-            --features "$FEATS" --akdir builder/anykernel \
+            --features "$FEATS" --akdir builder/anykernel $KC \
             --out "$GITHUB_WORKSPACE/zips/anykernel-$REV.zip"
 
       - name: Upload AnyKernel3 zip

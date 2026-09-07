@@ -22,8 +22,8 @@ def run(*cmd, **kw):
 
 
 def commit_tree():
-    if not Path("common/.git").is_dir():
-        return
+    if not Path("common/.git").exists():
+        sys.exit("FAIL: no common/.git")
     run("git", "-C", "common", "add", "-A", check=False)
     done = subprocess.run(["git", "-C", "common", "diff", "--cached",
                            "--quiet"])
@@ -32,6 +32,12 @@ def commit_tree():
             "-c", "user.email=builder@localhost",
             "commit", "-qm", "builder: commit tree (avoid -dirty)",
             check=False)
+    dirty = subprocess.run(["git", "-C", "common", "status",
+                            "--porcelain"], capture_output=True,
+                           text=True).stdout.strip()
+    if dirty:
+        sys.exit(f"FAIL: tree still dirty after commit:\n{dirty}")
+    print("commit: tree clean")
 
 
 commit_tree()
