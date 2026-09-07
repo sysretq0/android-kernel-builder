@@ -17,6 +17,21 @@ def run(*cmd, **kw):
     subprocess.run(cmd, **kw)
 
 
+def commit_tree():
+    if not Path("common/.git").is_dir():
+        return
+    run("git", "-C", "common", "add", "-A", check=False)
+    done = subprocess.run(["git", "-C", "common", "diff", "--cached",
+                           "--quiet"])
+    if done.returncode != 0:
+        run("git", "-C", "common", "-c", "user.name=builder",
+            "-c", "user.email=builder@localhost",
+            "commit", "-qm", "builder: commit tree (avoid -dirty)",
+            check=False)
+
+
+commit_tree()
+
 if kind == "build_sh":
     run("bash", "build/build.sh",
         env={**os.environ, "BUILD_CONFIG": "common/build.config.gki.aarch64"})
