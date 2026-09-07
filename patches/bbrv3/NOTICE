@@ -20,6 +20,12 @@ for scope creep (new files outside net/ipv4, Kconfig default flips,
 BBRv1 changes), then commit. setup-bbrv3.sh pins to these copies; upstream
 movement never reaches builds unreviewed.
 
+Vendored but unapplied on LTS-only trees (sublevels only grow):
+- sysctl_*.patch (trees lacking proc_dou8vec_minmax; ours always carry it)
+- 0002-net-tcp-add-tcp_snd_cwnd-*.patch (5.15 sublevel <= 43; ours >> 43).
+  setup-bbrv3.sh applies only the 0001 backports; these stay on disk so
+  the vendor set is complete.
+
 LOCAL FIXES (re-apply after any refresh, do not "restore" to upstream):
 - android15-6.6 0001: TCP_ECN_ECT_PERMANENT 3 -> 32. Upstream typo:
   ecn_flags layout is OK=1 QUEUE_CWR=2 DEMAND_CWR=4 SEEN=8 LOW=16,
