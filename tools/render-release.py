@@ -71,7 +71,7 @@ mgr = Path("manager-url.txt")
 if mgr.is_file() and mgr.read_text().strip():
     notes += f"\n[Manager APK]({mgr.read_text().strip()})\n"
 if footnotes:
-    notes += "\n## Notes\n" + "\n".join(f"- {l}" for l in footnotes) + "\n"
+    notes += "\n## Notes\n" + "\n".join(footnotes) + "\n"
 Path(out_notes).write_text(notes)
 tgtext = "\n".join(tg)
 if footnotes:
