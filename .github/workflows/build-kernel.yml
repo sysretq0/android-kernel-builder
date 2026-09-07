@@ -144,4 +144,34 @@ jobs:
           name: versions-${{ matrix.branch }}
           path: versions-${{ matrix.branch }}/
           if-no-files-found: warn
+
+  release:
+    needs: build
+    if: inputs.destination == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder
+      - name: Fetch zips
+        uses: actions/download-artifact@v4
+        with:
+          pattern: anykernel-*
+          path: zips
+          merge-multiple: true
+      - name: Fetch versions
+        uses: actions/download-artifact@v4
+        with:
+          pattern: versions-*
+          path: versions
+      - name: Publish release + Telegram
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TG_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: >
+          python3 builder/tools/publish-release.py
+          --tag "kernel-build-r${{ github.run_number }}"
+          --variant "${{ inputs.variant }}" --repo "${{ github.repository }}"
+          --zips zips --versions versions --builder builder
           if-no-files-found: warn
