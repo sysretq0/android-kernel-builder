@@ -75,7 +75,7 @@ def apply_one(tree: Path, patch: Path, entry: dict):
                        stdin=patch.open("rb"))
     if r.returncode != 0:
         sys.exit(f"FAIL: dry-run failed: {patch.name}")
-    run(["patch", "-p1", "--fuzz=3", f"--directory={tree}"],
+    run("patch", "-p1", "--fuzz=3", f"--directory={tree}",
         stdin=patch.open("rb"))
     check_markers(tree, patch, entry)
 
