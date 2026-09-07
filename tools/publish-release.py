@@ -65,9 +65,11 @@ if mgr:
         except Exception as e:
             print(f"manager lookup failed (non-fatal): {e}")
 
+bcommit = subprocess.run(["git", "-C", a.builder, "rev-parse", "HEAD"],
+                         capture_output=True, text=True).stdout.strip()
 run(sys.executable, f"{a.builder}/tools/render-release.py",
     a.versions, a.builder, a.variant, a.tag, a.zips,
-    "release-notes.md", "tg-table.txt")
+    "release-notes.md", "tg-table.txt", bcommit)
 print(Path("release-notes.md").read_text())
 
 zips = sorted(str(p) for p in Path(a.zips).glob("*.zip"))

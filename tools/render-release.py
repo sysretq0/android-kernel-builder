@@ -13,6 +13,7 @@ import sys
 from pathlib import Path
 
 vroot, builder, variant, tag, zips, out_notes, out_table = sys.argv[1:8]
+bcommit = sys.argv[8] if len(sys.argv) > 8 else ""
 builder = Path(builder)
 labels = json.loads((builder / "modules" / "manifest.json").read_text())["labels"]
 order = json.loads((builder / "modules" / "manifest.json").read_text())["order"]
@@ -47,8 +48,11 @@ def cell(key, parts):
 
 hdr = "| branch | " + " | ".join(labels[c]["label"] for c in cols) + " |"
 sep = "|" + "|".join(["---"] * (len(cols) + 1)) + "|"
-lines = [f"# {tag} ({variant})", "", hdr, sep]
-tg = [tag, ""]
+lines = [f"# {tag} ({variant})", ""]
+if bcommit:
+    lines += [f"Built from builder@{bcommit[:12]}", ""]
+lines += [hdr, sep]
+tg = [f"{tag} @ {bcommit[:12]}" if bcommit else tag, ""]
 for branch in sorted(branches):
     rev, feats = branches[branch]
     row = [branch] + [cell(c, feats.get(c)) for c in cols]
