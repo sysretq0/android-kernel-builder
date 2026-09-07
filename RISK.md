@@ -23,6 +23,7 @@ never hardcoded) prove each symbol survives `olddefconfig`.
 | udf (`UDF_FS=y`) | common | LOW | Dormant till mount; selects core only; zero module-list entries on 6.12/6.18 |
 | usb-rndis (CONFIGFS gadget) | common | LOW | Bool on USB_CONFIGFS+NET; selects default-n functions, undeclared nowhere that matters |
 | usb-serial (+CP210X/CH341/FTDI/PL2303) | 5.10 only | LOW | build.sh era has no module-outs check. 6.x stays `=m` — flipping broke Kleaf staging (observed), so this never leaves 5.10 |
+| snd-aloop (`SND_ALOOP=y`) | common | LOW | In-tree PCM loopback for audio-bridge projects (real user demand, WK#173). `=y` because we ship Images not `.ko`s. Verified 5.10–6.18: identical stanza, SND=y stock, zero aloop/pcm/timer `.ko` in any modules list |
 | ntfs3 (`NTFS3_FS=y`) | 5.15/6.1/6.6/6.12/6.18 | LOW | In-tree since 5.15; absent on 5.10 so per-branch by necessity, not choice |
 | zswap + zbud | 6.6 only | LOW | Mature mm code, pool off by default (needs explicit enable). Scoped to 6.6 because ZSWAP selects ZPOOL whose symbols breach the 5.15 KMI allowlist, and 6.12 module lists demand `zsmalloc.ko` |
 | ntsync (`NTSYNC=y`) | 6.18 only | LOW | Bare tristate, no deps, dormant `/dev/ntsync`. Unselectable on 6.12 (BROKEN gate), absent on 6.6 — sole-tree by Kconfig reality |
