@@ -482,6 +482,13 @@ jobs:
           path: bbrv3versions
           merge-multiple: true
         continue-on-error: true
+      - name: Fetch NTSync versions
+        uses: actions/download-artifact@v4
+        with:
+          pattern: ntsync-version-*
+          path: ntsyncversions
+          merge-multiple: true
+        continue-on-error: true
       - name: Fetch NoMount versions
         uses: actions/download-artifact@v4
         with:
@@ -530,14 +537,14 @@ jobs:
           TAG="kernel-build-r${{ github.run_number }}" \
           VARIANT="${{ inputs.variant }}" \
           IN_KSU="${{ needs.resolve.outputs.ksu }}" IN_SUSFS="${{ needs.resolve.outputs.susfs }}" \
-          IN_BBRV3="${{ needs.resolve.outputs.bbrv3 }}" IN_NOMOUNT="${{ needs.resolve.outputs.nomount }}" \
+          IN_BBRV3="${{ needs.resolve.outputs.bbrv3 }}" IN_NTSYNC="${{ needs.resolve.outputs.ntsync }}" IN_NOMOUNT="${{ needs.resolve.outputs.nomount }}" \
           IN_GUARD="${{ needs.resolve.outputs.guard }}" \
           FRAGS_COMMON="$FRAGS_C" FRAGS_BRANCH="$FRAGS_B" \
           RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
           REPO="${{ github.repository }}" \
           MANAGER_URL="$MANAGER_URL" MANAGER_PIN="$MANAGER_PIN" \
           python3 "$GITHUB_WORKSPACE/builder/tools/render-release.py" \
-            ksuversions susfsversions bbrv3versions nomountversions guardversions zips \
+            ksuversions susfsversions bbrv3versions nomountversions guardversions ntsyncversions zips \
             "$GITHUB_WORKSPACE/builder/docs/RELEASE_NOTES_EXTRA.txt" \
             release-notes.md tg-table.txt tg-extras.txt
           HL=$(git -C "$GITHUB_WORKSPACE/builder" log -1 --format=%s 2>/dev/null || echo "New build")

@@ -17,13 +17,14 @@ import glob
 import os
 import sys
 
-ksu_dir, susfs_dir, bbrv3_dir, nm_dir, gd_dir, zips_dir, extra_file, out_notes, out_table, out_extras = sys.argv[1:11]
+ksu_dir, susfs_dir, bbrv3_dir, nm_dir, gd_dir, nt_dir, zips_dir, extra_file, out_notes, out_table, out_extras = sys.argv[1:12]
 g = os.environ.get
 tag = g("TAG", "untagged")
 variant = g("VARIANT", "plain")
 ksu_on = g("IN_KSU") == "true"
 susfs_on = g("IN_SUSFS") == "true"
 bbrv3_on = g("IN_BBRV3") == "true"
+ntsync_on = g("IN_NTSYNC") == "true"
 nomount_on = g("IN_NOMOUNT") == "true"
 guard_on = g("IN_GUARD") == "true"
 
@@ -68,6 +69,10 @@ def off_reason(feature, branch):
         if "6.18" in branch:
             return "upstream"
         return "skip"
+    if feature == "ntsync":
+        if "6.12" in branch:
+            return "BROKEN"
+        return "skip"
     if "6.12" in branch or "6.18" in branch:
         return "backport"
     return "skip"
@@ -75,6 +80,7 @@ def off_reason(feature, branch):
 
 ksu = read_ver(os.path.join(ksu_dir, "ksu-version-*.txt"), "ksu-version-")
 susfs = read_ver(os.path.join(susfs_dir, "susfs-version-*.txt"), "susfs-version-")
+ntsync = read_ver(os.path.join(nt_dir, "ntsync-version-*.txt"), "ntsync-version-")
 bbrv3 = read_ver(os.path.join(bbrv3_dir, "bbrv3-version-*.txt"), "bbrv3-version-")
 zips = sorted(os.path.basename(z) for z in glob.glob(os.path.join(zips_dir, "*.zip")))
 
@@ -103,7 +109,14 @@ for b in branches:
         vcell = "no (%s)" % off_reason("bbrv3", b)
     else:
         vcell = "off"
-    rows.append((s, kcell, scell, vcell))
+    frag_has_nt = any(tok == b + ":ntsync" or tok.endswith("/ntsync") for tok in ((g("FRAGS_BRANCH") or "").split()))
+    if ntsync_on and (b in ntsync or frag_has_nt):
+        ncell2 = "yes" if b in ntsync else "yes (in-tree)"
+    elif ntsync_on:
+        ncell2 = "no (%s)" % off_reason("ntsync", b)
+    else:
+        ncell2 = "off"
+    rows.append((s, kcell, scell, vcell, ncell2))
 
 def comp_ver(d, prefix):
     vals = set()
@@ -146,10 +159,10 @@ for z in zips:
     md.append("- `%s`" % z)
 md.append("")
 md.append("### ⚙️ Config (`variants/%s.json`)" % variant)
-md.append("| Branch | KernelSU-Next | SuSFS | BBRv3 |")
-md.append("|---|---|---|---|")
-for s, kcell, scell, vcell in rows:
-    md.append("| %s | %s | %s | %s |" % (s, kcell, scell, vcell))
+md.append("| Branch | KernelSU-Next | SuSFS | BBRv3 | NTSync |")
+md.append("|---|---|---|---|---|")
+for s, kcell, scell, vcell, ncell2 in rows:
+    md.append("| %s | %s | %s | %s | %s |" % (s, kcell, scell, vcell, ncell2))
 md.append("")
 md.append("| NoMount | %s |" % nm_cell)
 md.append("| Partition Guard | %s |" % gd_cell)
@@ -179,8 +192,15 @@ if os.path.isfile(extra_file):
 with open(out_notes, "w") as f:
     f.write("\n".join(md) + "\n")
 
+def _off(s, c):
+    if c.startswith("no (") and c.endswith(")"):
+        return "%s (%s)" % (s, c[4:-1])
+    return "%s %s" % (s, c)
+
+
+nt_off = [_off(s, c) for s, kcell, scell, vcell, c in rows if not c.startswith("yes")] if ntsync_on else []
 tg = []
-for s, kcell, scell, vcell in rows:
+for s, kcell, scell, vcell, ncell2 in rows:
     tg.append("%s \u00b7 %s" % (s, kcell))
     tg.append("  SuSFS %s \u00b7 BBRv3 %s" % (mark(scell), mark(vcell)))
 ex = []
@@ -188,6 +208,8 @@ if nomount_on:
     ex.append("\u2022 NoMount: " + (nm_shas[0] if len(nm_shas) == 1 else "on"))
 if guard_on:
     ex.append("\u2022 Partition Guard: " + (gd_shas[0] if len(gd_shas) == 1 else "on"))
+if ntsync_on:
+    ex.append("\u2022 NTSync: " + ("all trees" if not nt_off else "all but " + ", ".join(nt_off)))
 if feat:
     ex.append("+ " + " \u00b7 ".join(feat))
 with open(out_extras, "w") as f:
