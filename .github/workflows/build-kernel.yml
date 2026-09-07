@@ -176,4 +176,3 @@ jobs:
           --tag "kernel-build-r${{ github.run_number }}"
           --variant "${{ inputs.variant }}" --repo "${{ github.repository }}"
           --zips zips --versions versions --builder builder
-          if-no-files-found: warn
