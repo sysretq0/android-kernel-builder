@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 kind = sys.argv[1]
-builder = Path("../builder")
+builder = Path("..")  # cwd=work, parent is the builder checkout
 frags = sorted((builder / "fragments" / "common").glob("*.config"))
 
 if not frags:

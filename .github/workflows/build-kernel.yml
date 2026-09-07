@@ -63,14 +63,14 @@ jobs:
 
       - name: Sync tree
         run: |
-          mkdir -p work
+          mkdir -p work && cd work
           repo init -u https://android.googlesource.com/kernel/manifest \
             -b "${{ matrix.manifest }}" --depth=1 --groups=all
           repo sync -c --no-tags -j"$(nproc)"
-        working-directory: work
 
       - name: Stage added config
-        run: python3 builder/tools/stage_fragments.py "${{ matrix.kind }}"
+        run: python3 ../tools/stage_fragments.py "${{ matrix.kind }}"
+        working-directory: work
 
       - name: Commit tree
         run: |
