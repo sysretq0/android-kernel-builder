@@ -165,9 +165,10 @@ report
 # 5) swap for link-heavy kernels (ThinLTO thin-link on 16G runners).
 swapoff -a
 rm -f /swapfile
-fallocate -l 24G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=24576
+fallocate -l 30G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=30720
 chmod 600 /swapfile
 mkswap /swapfile
 swapon /swapfile
+sysctl -w vm.swappiness=100
 free -h
 exit 0
