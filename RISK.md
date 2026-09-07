@@ -38,6 +38,7 @@ never hardcoded) prove each symbol survives `olddefconfig`.
 | NoMount VFS redirection | maxsteeel `dev 3e65dbc0` | MEDIUM | Third-party path interposition, but single additive `.c`, RAM-only, installer-pinned, built-in `=y`. Booted on 5.10 |
 | Partition Guard LSM | own repo `main c12b7294` | LOW | Own ~400-line deny-only LSM, no upstream to drift. Device-proven: blocked `dd` restore + blkdiscard + BLKDISCARD ioctl on nvram (`EPERM`, denied counter incrementing), zero false positives over 7min uptime; KASAN race-fuzz (BLKRRPART vs open/discard hammer): 20768 denials, zero KASAN reports. Fail-open by design; root can disable (guardrail, not cage); whole-disk offsets out of scope (LSM sees no offsets — documented, not fixable in-LSM) |
 | BBRv3 backport | vendored `patches/bbrv3/` (no network at build) | LOW | Safest patch class we carry: separate `tcp_bbr3.c`, BBRv1 untouched, default CC stays CUBIC, dormant until selected per-connection. Version-gated 5.10–6.6 with marker + `.rej` fail-closed; 6.12/6.18 clean-skip (no proven patch). Green trial on all 8 |
+| ModuleGate LSM (audit) | own repo `main ea3a739` | MEDIUM | Single `kernel_post_load_data` hook, hash-not-name identity, audit-default (zero behavior change). Unproven: never compiled or booted at merge time; 5-round code review + all-8-tree API verification stand in until the fleet + device prove it. Fail-closed hash errors, init-writes-only sepolicy, boot never enforces. |
 
 ## Build-time tree mutations
 
