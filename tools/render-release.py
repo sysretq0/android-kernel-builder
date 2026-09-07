@@ -98,9 +98,11 @@ for b in branches:
 
 feat = []
 if nomount_on:
-    feat.append("NoMount on")
+    feat.append("NoMount")
 if guard_on:
-    feat.append("Partition Guard on")
+    feat.append("Partition Guard")
+ncell = "yes" if nomount_on else "off"
+gcell = "yes" if guard_on else "off"
 frags = (g("FRAGS_COMMON") or "").split() + (g("FRAGS_BRANCH") or "").split()
 if frags:
     feat.append("Fragments: " + " ".join(frags))
@@ -113,10 +115,10 @@ for z in zips:
     md.append("- `%s`" % z)
 md.append("")
 md.append("### ⚙️ Config (`variants/%s.json`)" % variant)
-md.append("| Branch | KernelSU-Next | SuSFS | BBRv3 |")
-md.append("|---|---|---|---|")
+md.append("| Branch | KernelSU-Next | SuSFS | BBRv3 | NoMount | Guard |")
+md.append("|---|---|---|---|---|---|")
 for s, kcell, scell, vcell in rows:
-    md.append("| %s | %s | %s | %s |" % (s, kcell, scell, vcell))
+    md.append("| %s | %s | %s | %s | %s | %s |" % (s, kcell, scell, vcell, ncell, gcell))
 if feat:
     md.append("")
     md.append(" · ".join(feat))
@@ -143,15 +145,11 @@ if os.path.isfile(extra_file):
 with open(out_notes, "w") as f:
     f.write("\n".join(md) + "\n")
 
-cols = ("branch", "ksu", "susfs", "bbrv3")
-widths = [len(c) for c in cols]
-for r in rows:
-    for i, c in enumerate(r):
-        widths[i] = max(widths[i], len(c))
 tg = []
-tg.append("  ".join(c.ljust(widths[i]) for i, c in enumerate(cols)))
-for r in rows:
-    tg.append("  ".join(c.ljust(widths[i]) for i, c in enumerate(r)))
+for s, kcell, scell, vcell in rows:
+    tg.append("%s: KSU %s \u00b7 SuSFS %s \u00b7 BBRv3 %s" % (s, kcell, scell, vcell))
+if feat:
+    tg.append("+ " + " \u00b7 ".join(feat))
 with open(out_table, "w") as f:
     f.write("\n".join(tg) + "\n")
 print("render-release: %d branches, %d zips" % (len(rows), len(zips)))

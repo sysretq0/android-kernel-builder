@@ -523,13 +523,12 @@ jobs:
                 if [ "$NSPEC" = "1" ]; then topic="${TG_TOPIC:-}"; else topic=""; fi
               fi
               [ -z "$chat" ] && continue
-              ARGS=""
-              [ -n "$topic" ] && ARGS="--data-urlencode message_thread_id=${topic}"
-              # shellcheck disable=SC2086
+              FWD_ARGS=()
+              [ -n "$topic" ] && FWD_ARGS+=(--data-urlencode "message_thread_id=${topic}")
               if curl -sf --max-time 30 -X POST "https://api.telegram.org/bot${TG_TOKEN}/forwardMessage" \
                 --data-urlencode "chat_id=${chat}" \
                 --data-urlencode "from_chat_id=${TG_CHAT}" \
-                --data-urlencode "message_id=${MID}" $ARGS > /dev/null; then
+                --data-urlencode "message_id=${MID}" "${FWD_ARGS[@]}" > /dev/null; then
                 echo "telegram forwarded to $chat${topic:+ topic $topic}"
               else
                 echo "telegram forward FAILED for $chat${topic:+ topic $topic} (is the bot in there with post rights?)"
