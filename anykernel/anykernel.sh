@@ -1,0 +1,62 @@
+### AnyKernel3 Ramdisk Mod Script
+## sysretq0/android-kernel-builder (generic GKI installer)
+## Backend (tools/, META-INF/): AnyKernel3 by osm0sis @ xda-developers, pristine
+
+### AnyKernel setup
+# global properties
+# NOTE: @REV@ is stamped per-branch by tools/pack-anykernel.sh at pack time.
+properties() { '
+kernel.string=sysretq0 GKI @REV@
+do.devicecheck=0
+do.modules=0
+do.systemless=1
+do.cleanup=1
+do.cleanuponabort=0
+device.name1=
+device.name2=
+device.name3=
+device.name4=
+device.name5=
+supported.versions=
+supported.patchlevels=
+supported.vendorpatchlevels=
+'; } # end properties
+
+
+### AnyKernel install
+# GKI generic: no device/version checks (do.devicecheck=0), no ramdisk mods,
+# no modules. Kernel blob (raw Image -- compressed variants panic at
+# decompress) is swapped into the stock boot image, everything else is
+# preserved.
+
+# boot shell variables
+# BLOCK=boot (not auto): on userspace devices the kernel always lives in
+# the boot partition; slot suffix still resolves via IS_SLOT_DEVICE.
+BLOCK=boot;
+IS_SLOT_DEVICE=auto;
+RAMDISK_COMPRESSION=auto;
+PATCH_VBMETA_FLAG=auto;
+
+# import functions/variables and setup patching - see for reference (DO NOT REMOVE)
+. tools/ak3-core.sh;
+
+# boot install
+model=$(getprop ro.product.model 2>/dev/null);
+[ -n "$model" ] || model="unknown device";
+slot=$(getprop ro.boot.slot_suffix 2>/dev/null);
+[ -n "$slot" ] || slot=$(grep -o 'androidboot.slot_suffix=[^ ]*' /proc/cmdline 2>/dev/null | cut -d= -f2);
+[ -n "$slot" ] || slot="a-only";
+ui_print " ";
+ui_print "=====================================";
+ui_print " sysretq0 GKI @REV@";
+ui_print " Built @DATE@";
+ui_print " Device: $model | Slot: $slot";
+ui_print "=====================================";
+@FEATURE_LINES@
+ui_print " Unpacking boot image...";
+split_boot; # skip ramdisk unpack (no ramdisk mods; switch to dump_boot if you add any)
+
+ui_print " Flashing new kernel...";
+flash_boot; # skip repack (pairs with split_boot; switch to write_boot with dump_boot)
+ui_print " Done - reboot to system.";
+## end boot install

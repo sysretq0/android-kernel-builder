@@ -111,6 +111,26 @@ jobs:
         run: python3 ../builder/tools/collect-versions.py "${{ matrix.branch }}"
         working-directory: work
 
+      - name: Pack AnyKernel3
+        run: |
+          REV=$(cat "versions-${{ matrix.branch }}/rev.txt")
+          IMG=""
+          for cand in Image Image.gz Image.lz4; do
+            [ -f "out-${{ matrix.branch }}/$cand" ] && IMG="out-${{ matrix.branch }}/$cand" && break
+          done
+          [ -n "$IMG" ] || { echo "no kernel image; skipping pack"; exit 0; }
+          FEATS=$(python3 builder/tools/ak3-features.py --versions-dir "versions-${{ matrix.branch }}" --builder builder --variant "${{ inputs.variant }}" --branch "${{ matrix.branch }}")
+          bash builder/tools/pack-anykernel.sh --image "$IMG" --rev "$REV" \
+            --features "$FEATS" --akdir builder/anykernel \
+            --out "$GITHUB_WORKSPACE/zips/anykernel-$REV.zip"
+
+      - name: Upload AnyKernel3 zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: anykernel-${{ matrix.branch }}
+          path: zips/
+          if-no-files-found: warn
+
       - name: Upload kernel images
         uses: actions/upload-artifact@v4
         with:
