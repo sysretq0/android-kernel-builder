@@ -83,20 +83,8 @@ jobs:
           fi
         working-directory: work
 
-      - name: Build (build.sh era)
-        if: matrix.kind == 'build_sh'
-        run: bash build/build.sh
-        working-directory: work
-        env:
-          BUILD_CONFIG: common/build.config.gki.aarch64
-
-      - name: Build (Kleaf era)
-        if: matrix.kind == 'kleaf'
-        run: |
-          FLAG=""
-          [ -f common/builder_fragments.config ] && FLAG="--defconfig_fragment=//common:builder_fragments"
-          # shellcheck disable=SC2086
-          tools/bazel build $FLAG //common:kernel_aarch64_dist
+      - name: Build
+        run: python3 ../builder/tools/build_kernel.py "${{ matrix.kind }}"
         working-directory: work
 
       - name: Collect images
