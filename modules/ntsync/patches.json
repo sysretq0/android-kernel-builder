@@ -3,12 +3,18 @@
   "android12-5.10-lts": {
     "files": [
       { "candidates": ["ntsync_compat_android12-5.10.patch", "ntsync_compat_android12-5.10_A14.patch"],
-        "token": "ntsync" },
+        "markers": [
+          { "file": "drivers/misc/Kconfig", "pattern": "config NTSYNC" },
+          { "file": "include/linux/lockdep.h", "pattern": "LOCK_STATE_UNKNOWN" },
+          { "file": "kernel/locking/lockdep.c", "pattern": "LOCK_STATE_NOT_HELD" } ] },
       { "patch": "ntsync_base.patch", "token": "ntsync" } ] },
   "android13-5.10-lts": {
     "files": [
       { "candidates": ["ntsync_compat_android12-5.10.patch", "ntsync_compat_android12-5.10_A14.patch"],
-        "token": "ntsync" },
+        "markers": [
+          { "file": "drivers/misc/Kconfig", "pattern": "config NTSYNC" },
+          { "file": "include/linux/lockdep.h", "pattern": "LOCK_STATE_UNKNOWN" },
+          { "file": "kernel/locking/lockdep.c", "pattern": "LOCK_STATE_NOT_HELD" } ] },
       { "patch": "ntsync_base.patch", "token": "ntsync" } ] },
   "android13-5.15-lts": {
     "files": [
