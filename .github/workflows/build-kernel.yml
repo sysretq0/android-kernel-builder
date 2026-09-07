@@ -395,13 +395,13 @@ jobs:
       - name: Upload kernel images
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-images
+          name: kernel-images-${{ steps.rev.outputs.rev }}
           path: img/
           if-no-files-found: warn
       - name: Upload kernel debug
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-debug
+          name: kernel-debug-${{ steps.rev.outputs.rev }}
           path: dbg/
           if-no-files-found: ignore
 
@@ -422,7 +422,7 @@ jobs:
       - name: Upload versions
         uses: actions/upload-artifact@v4
         with:
-          name: versions
+          name: versions-${{ steps.rev.outputs.rev }}
           path: "*-version-${{ steps.rev.outputs.rev }}.txt"
           if-no-files-found: ignore
 
@@ -440,7 +440,7 @@ jobs:
       - name: Fetch versions
         uses: actions/download-artifact@v4
         with:
-          name: versions
+          pattern: versions-*
           path: versions
           merge-multiple: true
         continue-on-error: true
