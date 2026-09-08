@@ -41,6 +41,11 @@ on:
           - android15-6.6-lts
           - android16-6.12-lts
           - android17-6.18-lts
+      clang:
+        description: Override build_sh clang with pinned release compiler
+        default: false
+        required: false
+        type: boolean
 
 jobs:
   resolve:
@@ -50,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       - id: r
-        run: python3 tools/matrix.py "${{ inputs.variant }}" "${{ inputs.branch }}"
+        run: python3 tools/matrix.py "${{ inputs.variant }}" "${{ inputs.branch }}" "${{ inputs.clang }}"
 
   build:
     needs: resolve
@@ -86,7 +91,16 @@ jobs:
           sed "s/__REVISION__/${{ matrix.branch }}/" \
             "$GITHUB_WORKSPACE/builder/manifests/vendor-common.xml.template" \
             > .repo/local_manifests/vendor-common.xml
+          if [ -n "${{ matrix.clang }}" ]; then
+            sed -i 's|</manifest>|  <remove-project name="platform/prebuilts/clang/host/linux-x86" />\n</manifest>|' \
+              .repo/local_manifests/vendor-common.xml
+          fi
           repo sync -c --no-tags -j"$(nproc)"
+
+      - name: Setup clang override
+        if: matrix.clang != ''
+        run: python3 ../builder/tools/setup-clang.py "${{ matrix.clang }}" "${{ github.repository }}"
+        working-directory: work
 
       - name: Integrate features
         run: python3 ../builder/tools/integrate.py "${{ inputs.variant }}" "${{ matrix.branch }}"

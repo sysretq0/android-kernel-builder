@@ -1,0 +1,20 @@
+name: fetch-clang
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Clang version to snapshot, or 'all' from clang/versions.json
+        default: all
+        required: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Snapshot clang into releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 tools/fetch-clang.py "${{ inputs.version }}"
