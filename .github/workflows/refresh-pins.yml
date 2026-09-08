@@ -17,6 +17,7 @@ jobs:
             echo "pins current; nothing to push"
             exit 0
           fi
+          git add variants/
           git -c user.name="android-kernel-builder" -c user.email="builder@localhost" \
             commit -qm "pins: refresh to upstream tips $(date -u +%F)"
           git push origin HEAD:main
