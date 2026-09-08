@@ -30,7 +30,7 @@ if want != "all":
     rows = [r for r in rows if r["branch"] == want]
     if not rows:
         sys.exit(f"unknown branch: {want}")
-if clang_on and any(r["kind"] != "build_sh" for r in rows):
+if clang_on and want != "all" and any(r["kind"] != "build_sh" for r in rows):
     sys.exit("FAIL: clang override is build_sh-only "
              "(kleaf is tied to its toolchain)")
 
