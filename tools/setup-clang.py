@@ -117,6 +117,29 @@ print(f"clang: PATH-probe rc={probe.returncode} "
       f"{(probe.stdout or probe.stderr).strip()[:160]}")
 if probe.returncode != 0:
     sys.exit("FAIL: clang not PATH-resolvable right after extract")
+# Clang 19+ passes the sysreg stack-guard probe, selecting
+# CONFIG_STACKPROTECTOR_PER_TASK and dropping the global
+# __stack_chk_guard that OEM modules reference. Restore it.
+# Companion to the override only: stock clang never selects PER_TASK.
+# NOTE: absolute path -- `git -C common` resolves relatives under common/.
+pp = (Path.cwd() / "../builder/clang/stackprotector-per-task-compat.patch").resolve()
+chk = subprocess.run(["git", "-C", "common", "apply", "--check",
+                        str(pp)], capture_output=True, text=True)
+if chk.returncode != 0:
+    rev = subprocess.run(["git", "-C", "common", "apply", "--reverse",
+                          "--check", str(pp)],
+                         capture_output=True, text=True)
+    if rev.returncode != 0:
+        sys.exit("FAIL: stackprotector patch does not apply:\n"
+                 + chk.stderr[:500])
+    print("clang: stackprotector patch already applied, SKIP")
+else:
+    ap = subprocess.run(["git", "-C", "common", "apply", str(pp)],
+                        capture_output=True, text=True)
+    if ap.returncode != 0:
+        sys.exit("FAIL: stackprotector patch apply failed:\n"
+                 + ap.stderr[:500])
+    print("clang: stackprotector patch applied")
 # Hand the absolute dir to later steps (prove + build pre-flight).
 gh = os.environ.get("GITHUB_ENV")
 if gh:
