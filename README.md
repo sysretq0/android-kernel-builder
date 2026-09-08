@@ -52,7 +52,7 @@ gh workflow run build-kernel.yml --ref main -f variant=plain \
 - [`docs/clang.md`](docs/clang.md) — pinned-compiler override
 - [`docs/releases.md`](docs/releases.md) — artifacts, release body, Telegram, AK3
 - [`docs/upstream.md`](docs/upstream.md) — change detection, mirror sync, pin refreshes
-- [`RISK.md`](RISK.md) — every deviation from stock GKI, graded with evidence
+- [`docs/RISK.md`](docs/RISK.md) — every deviation from stock GKI, graded with evidence
 
 ## Credits
 
