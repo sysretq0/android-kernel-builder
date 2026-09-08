@@ -22,10 +22,15 @@ from pathlib import Path
 
 target, repo = sys.argv[1], sys.argv[2]
 
-gki = Path("common/build.config.gki.aarch64").read_text()
-m = re.search(r"^CLANG_PREBUILT_BIN=(\S+)", gki, re.M)
+text = ""
+for cand in ("common/build.config.gki.aarch64", "common/build.config.common",
+             "common/build.config.aarch64", "common/build.config.constants"):
+    p = Path(cand)
+    if p.exists():
+        text += p.read_text() + "\n"
+m = re.search(r"^CLANG_PREBUILT_BIN=(\S+)", text, re.M)
 if not m:
-    sys.exit("FAIL: no CLANG_PREBUILT_BIN in build.config.gki.aarch64")
+    sys.exit("FAIL: no CLANG_PREBUILT_BIN in build.config.*")
 decl = m.group(1)
 consts = {}
 cp = Path("common/build.config.constants")
