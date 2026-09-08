@@ -35,3 +35,10 @@ Portability notes learned the hard way: stock `=m` + module-list
 declared means "never flip to `=y`" (usb-serial lives on 5.10 only for
 this reason); tristate children can never exceed a `=m` parent
 (`CAN=m` caps everything under it).
+
+## The `fragments: false` toggle
+
+Disables the repo pool (`common` + `extra`) for bisect builds, but
+never module-generated symbols: an integrated driver without its symbol
+falls to Kconfig default, which can be unbuildable (NTSync defaults
+`=m`, which cannot link). Source-or-nothing.

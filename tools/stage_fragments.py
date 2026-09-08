@@ -3,9 +3,14 @@
 
 Sources (in merge order, last wins on conflict):
 1. fragments/common/*.config -- universal, every branch, no JSON needed
+   (skipped when the variant sets fragments:false)
 2. branch "extra" names from variants/<variant>.json, resolved to
    fragments/version-specific/<name>.config -- one shared copy each,
    JSON dictates which branches get what. Missing file = hard fail.
+   (also skipped when fragments:false)
+3. modular.fragments.d/*.config -- module-generated, always staged.
+   Source-or-nothing: an integrated driver must carry its symbol, or
+   Kconfig default applies (NTSync defaults =m, which cannot link).
 
 Writes work/modular.fragment (validated, canon lines) plus, on Kleaf
 trees, common/builder_fragments.config + filegroup (idempotent).
@@ -24,16 +29,24 @@ builder = Path("../builder")  # cwd=work, checkout is a sibling
 
 v = json.loads((builder / "variants" / f"{variant}.json").read_text())
 rec = next(b for b in v["branches"] if b["branch"] == branch)
-if not v.get("defaults", {}).get("fragments", True):
-    print("fragments off; stock tree")
-    sys.exit(0)
+# Repo fragments are optional; module-generated symbols are not.
+# Source-or-nothing: an integrated driver without its symbol falls back
+# to Kconfig default, which for NTSync is =m -- and =m cannot link
+# (unexported __vfs_setxattr_noperm; observed modpost failure). The
+# toggle gates the repo pool only, never the module symbols whose
+# source is already in the tree.
+repo_on = v.get("defaults", {}).get("fragments", True)
 
-frags = sorted((builder / "fragments" / "common").glob("*.config"))
-for name in rec.get("extra", []):
-    f = builder / "fragments" / "version-specific" / f"{name}.config"
-    if not f.is_file():
-        sys.exit(f"FAIL: {branch} lists extra {name!r}, no such file")
-    frags.append(f)
+frags = []
+if repo_on:
+    frags = sorted((builder / "fragments" / "common").glob("*.config"))
+    for name in rec.get("extra", []):
+        f = builder / "fragments" / "version-specific" / f"{name}.config"
+        if not f.is_file():
+            sys.exit(f"FAIL: {branch} lists extra {name!r}, no such file")
+        frags.append(f)
+else:
+    print("repo fragments off; module symbols still apply")
 # generated fragments (module installers ran before stage, so source and
 # symbol always agree -- a symbol without its driver cannot be staged)
 gen = sorted(Path("modular.fragments.d").glob("*.config")) \
