@@ -13,7 +13,10 @@ jobs:
           ref: main
       - run: python3 tools/refresh-pins.py --write
       - run: |
-          git diff --quiet && echo "pins current; nothing to push" && exit 0
+          if git diff --quiet; then
+            echo "pins current; nothing to push"
+            exit 0
+          fi
           git -c user.name="android-kernel-builder" -c user.email="builder@localhost" \
             commit -qm "pins: refresh to upstream tips $(date -u +%F)"
           git push origin HEAD:main
