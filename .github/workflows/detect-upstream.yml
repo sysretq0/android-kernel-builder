@@ -18,6 +18,13 @@ jobs:
           OUT=$(python3 tools/check-upstream.py plain)
           echo "$OUT"
           echo "$OUT" | grep -q "^CHANGED " && echo "changed=true" >>"$GITHUB_OUTPUT" || echo "changed=false" >>"$GITHUB_OUTPUT"
+      - name: Mirror changed branches
+        if: steps.cmp.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.KERNEL_MIRROR_TOKEN }}
+        run: |
+          cd builder
+          python3 tools/mirror-upstream.py plain --push
       - name: Dispatch plain fleet
         if: steps.cmp.outputs.changed == 'true'
         env:
