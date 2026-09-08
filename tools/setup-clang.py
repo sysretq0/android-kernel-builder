@@ -16,6 +16,7 @@ setup-clang.py <target> <repo> [--local-tgz path]
 """
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -107,6 +108,8 @@ Path(".clang-version").write_text(f"{target} {line1}\n")
 print(f"clang: {line1}")
 st = cc.stat()
 print(f"clang: bin/clang size={st.st_size} mode={oct(st.st_mode)}")
+du = shutil.disk_usage(dest)
+print(f"clang: disk free {du.free // 1024 // 1024}MB in {dest.parent}")
 # PATH-resolution proof, exactly the way build.sh/make will use it.
 probe = subprocess.run(["bash", "-c",
                           "command -v clang && clang --version | head -1"],

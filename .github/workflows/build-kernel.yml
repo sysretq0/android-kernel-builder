@@ -102,13 +102,6 @@ jobs:
         run: python3 ../builder/tools/setup-clang.py "${{ matrix.clang }}" "${{ github.repository }}"
         working-directory: work
 
-      - name: Prove clang present
-        if: matrix.clang != ''
-        run: |
-          ls -la "$CLANG_DIR/clang" "$CLANG_DIR/clang++" 2>&1 | head -5
-          "$CLANG_DIR/clang" --version | head -1
-          df -h . | tail -1
-
       - name: Integrate features
         run: python3 ../builder/tools/integrate.py "${{ inputs.variant }}" "${{ matrix.branch }}"
         working-directory: work
