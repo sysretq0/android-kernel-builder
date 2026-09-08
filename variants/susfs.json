@@ -2,8 +2,8 @@
   "defaults": {
     "our_revision": "lts",
     "fragments": true,
-    "ksu": { "branch": "dev-susfs", "tag": "", "commit": "c7e27d8275cbbe5a54076ced6abf6733b5d25dca" },
-    "nomount": { "branch": "dev", "tag": "", "commit": "0c4b2dbd113b267b673cd7925cd80736658d7a62" },
+    "ksu": { "branch": "dev-susfs", "tag": "", "commit": "e04e94415d466349df24c43920967df25012fd58" },
+    "nomount": { "branch": "dev", "tag": "", "commit": "f7f7caaf814b3aa35bedd0bd2166c7b838f40763" },
     "guard": { "branch": "main", "tag": "", "commit": "e23b2d8661043c5ec99494bfac6094707897c122" },
     "bbrv3": true,
     "ntsync": true,
@@ -16,8 +16,8 @@
     { "branch": "android13-5.15-lts", "manifest": "common-android13-5.15-lts", "kind": "build_sh", "extra": ["ntfs3"] },
     { "branch": "android14-5.15-lts", "manifest": "common-android14-5.15-lts", "kind": "kleaf", "extra": ["ntfs3"] },
     { "branch": "android14-6.1-lts", "manifest": "common-android14-6.1-lts", "kind": "kleaf", "extra": ["ntfs3"] },
-    { "branch": "android15-6.6-lts", "manifest": "common-android15-6.6-lts", "kind": "kleaf", "extra": ["ntfs3", "zswap"], "ksu": { "branch": "dev", "tag": "", "commit": "8b9d7a7a9cd4a45a6b297817a0925031bc9454a9" } },
+    { "branch": "android15-6.6-lts", "manifest": "common-android15-6.6-lts", "kind": "kleaf", "extra": ["ntfs3", "zswap"], "ksu": { "branch": "dev", "tag": "", "commit": "e801e16b515e0c7be7c2eb6ca8be4d63551d4786" } },
     { "branch": "android16-6.12-lts", "manifest": "common-android16-6.12-lts", "kind": "kleaf", "extra": ["ntfs3"] },
-    { "branch": "android17-6.18-lts", "manifest": "common-android17-6.18-lts", "kind": "kleaf", "extra": ["ntfs3"], "ksu": { "branch": "dev", "tag": "", "commit": "8b9d7a7a9cd4a45a6b297817a0925031bc9454a9" } }
+    { "branch": "android17-6.18-lts", "manifest": "common-android17-6.18-lts", "kind": "kleaf", "extra": ["ntfs3"], "ksu": { "branch": "dev", "tag": "", "commit": "e801e16b515e0c7be7c2eb6ca8be4d63551d4786" } }
   ]
 }
