@@ -69,8 +69,8 @@ gh workflow run build-kernel.yml --ref main -f variant=plain \
 ## License
 
 Scripts, workflows, fragments, and AK3 template written for this repo are
-the author's work, intended GPL-3.0-only (a `LICENSE` file has not been
-added yet). Kernel-side code stays GPL-2.0-only as it ships.
+the author's work, licensed GPL-3.0-only — see [LICENSE](LICENSE). Kernel-side
+code stays GPL-2.0-only as it ships.
 
 Carve-outs (not ours, licenses unchanged): AnyKernel3 backend
 (`anykernel/tools/`, `anykernel/META-INF/`), the `magiskboot` binary

@@ -37,9 +37,9 @@ fails loud on drift.
 - `extra` assigns version-specific fragments from the single-copy pool
   (see `docs/fragments.md`); JSON stays small because the pool files
   carry the knowledge.
-- `plain` vs `susfs` differ today in KSU ref (`dev` vs `dev-susfs`),
-  `susfs: true`, and `mgate` (dropped from `plain` pending device proof
-  of the finit-hook fix).
+- `plain` vs `susfs` differ today in KSU ref (`dev` vs `dev-susfs`)
+  and `susfs: true`. ModuleGate is `false` in both: it does not boot
+  (see `docs/RISK.md`) and stays off until further notice.
 
 ## Dispatch
 
