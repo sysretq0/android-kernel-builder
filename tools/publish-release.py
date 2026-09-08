@@ -43,17 +43,17 @@ if mgr:
     if shas:
         sha = shas.most_common(1)[0][0]
         try:
-            wf = run(["gh", "api",
+            wf = run("gh", "api",
                         f"repos/{mgr['repo']}/actions/workflows",
                         "--jq", ".workflows[] | "
-                        f"select(.name==\"{mgr['workflow']}\") | .id"],
+                        f"select(.name==\"{mgr['workflow']}\") | .id",
                        capture_output=True, text=True).stdout.strip()
-            runs = run(["gh", "api",
+            runs = run("gh", "api",
                           f"repos/{mgr['repo']}/actions/workflows/"
                           f"{wf}/runs?branch=dev&status=success&per_page=20",
                           "--jq",
                           f".workflow_runs[] | select(.head_sha | "
-                          f"startswith(\"{sha}\")) | .id"],
+                          f"startswith(\"{sha}\")) | .id",
                          capture_output=True, text=True).stdout.strip()
             rid = runs.splitlines()[0] if runs.strip() else ""
             url = (f"https://nightly.link/{mgr['repo']}/actions/runs/"

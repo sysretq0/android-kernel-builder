@@ -20,7 +20,7 @@ on:
           - release
       cleanup:
         description: Runner disk cleanup (force ignores the free-space goal)
-        default: auto
+        default: force
         required: false
         type: choice
         options:
@@ -172,6 +172,8 @@ jobs:
     needs: build
     if: inputs.destination == 'release'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v7.0.1
         with:
