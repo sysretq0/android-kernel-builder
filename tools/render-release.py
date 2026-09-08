@@ -59,10 +59,13 @@ if bcommit:
         lines += [f"Built from builder@{bcommit[:12]}", ""]
 lines += [hdr, sep]
 tg = [f"{tag} @ {bcommit[:12]}" if bcommit else tag, ""]
+toolchains = {}
 for branch in sorted(branches):
     rev, feats = branches[branch]
     row = [branch] + [cell(c, feats.get(c)) for c in cols]
     lines.append("| " + " | ".join(row) + " |")
+    if "clang" in feats:
+        toolchains[branch] = feats["clang"][0]
     det = [c for c in cols if labels.get(c, {}).get("detail") == "version"]
     short = branch.removeprefix("android").removesuffix("-lts")
     base = " ".join(f"{labels[c].get('short', c)} "
@@ -70,6 +73,10 @@ for branch in sorted(branches):
     extras = " ".join(f"+{c}" for c in cols
                        if c not in det and feats.get(c))
     tg.append(f"{short}: {base} {extras}".strip())
+if toolchains:
+    lines += ["", "## Toolchain"]
+    lines += [f"- {b}: {t}" for b, t in toolchains.items()]
+    tg.append(f"Toolchain: {', '.join(sorted(set(toolchains.values())))}")
 
 ziplist = sorted(Path(zips).glob("*.zip"))
 dl = "\n".join(f"- `{z.name}`" for z in ziplist)

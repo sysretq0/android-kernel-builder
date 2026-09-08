@@ -34,6 +34,11 @@ for mod in order:
     if key in present:
         feats.append(f"{labels[key]['label']} "
                      f"{(vd / f'{key}.txt').read_text().split()[0]}")
+# Toolchain evidence is not a module (no order entry) but is shown for
+# transparency. Label and version both come from evidence, never hardcoded.
+if "clang" in present:
+    feats.append(f"{labels['clang']['label']} "
+                 f"{(vd / 'clang.txt').read_text().split()[0]}")
 
 v = json.loads((builder / "variants" / f"{a.variant}.json").read_text())
 rec = next(b for b in v["branches"] if b["branch"] == a.branch)
