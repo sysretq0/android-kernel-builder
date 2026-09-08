@@ -119,27 +119,50 @@ if probe.returncode != 0:
     sys.exit("FAIL: clang not PATH-resolvable right after extract")
 # Clang 19+ passes the sysreg stack-guard probe, selecting
 # CONFIG_STACKPROTECTOR_PER_TASK and dropping the global
-# __stack_chk_guard that OEM modules reference. Restore it.
+# __stack_chk_guard that OEM modules reference. Restore it
+# (same transformation as CloudFox-Kernel abf87b62).
 # Companion to the override only: stock clang never selects PER_TASK.
-# NOTE: absolute path -- `git -C common` resolves relatives under common/.
-pp = (Path.cwd() / "../builder/clang/stackprotector-per-task-compat.patch").resolve()
-chk = subprocess.run(["git", "-C", "common", "apply", "--check",
-                        str(pp)], capture_output=True, text=True)
-if chk.returncode != 0:
-    rev = subprocess.run(["git", "-C", "common", "apply", "--reverse",
-                          "--check", str(pp)],
-                         capture_output=True, text=True)
-    if rev.returncode != 0:
-        sys.exit("FAIL: stackprotector patch does not apply:\n"
-                 + chk.stderr[:500])
-    print("clang: stackprotector patch already applied, SKIP")
-else:
-    ap = subprocess.run(["git", "-C", "common", "apply", str(pp)],
-                        capture_output=True, text=True)
-    if ap.returncode != 0:
-        sys.exit("FAIL: stackprotector patch apply failed:\n"
-                 + ap.stderr[:500])
-    print("clang: stackprotector patch applied")
+# Exact-string replacement, not a context diff: the two target lines
+# are byte-identical (and unique) on every build_sh tree while their
+# surroundings differ (5.15 includes system_misc.h, 5.10 does not).
+def sub_once(path, old, new):
+    p = Path("common") / path
+    s = p.read_text()
+    n = s.count(old)
+    if n == 0:
+        print(f"clang: {path} already converted, SKIP")
+        return
+    if n != 1:
+        sys.exit(f"FAIL: {path}: expected 1 match, found {n}")
+    p.write_text(s.replace(old, new))
+    print(f"clang: {path} converted")
+
+sub_once("arch/arm64/kernel/process.c",
+         "#if defined(CONFIG_STACKPROTECTOR)"
+         " && !defined(CONFIG_STACKPROTECTOR_PER_TASK)",
+         "#if defined(CONFIG_STACKPROTECTOR)")
+
+sub_once("arch/arm64/include/asm/stackprotector.h",
+         "\tif (!IS_ENABLED(CONFIG_STACKPROTECTOR_PER_TASK))\n"
+         "\t\t__stack_chk_guard = current->stack_canary;",
+         "\t/*\n"
+         "\t * The per-task/sysreg stack guard"
+         " (CONFIG_STACKPROTECTOR_PER_TASK)\n"
+         "\t * lets the compiler obtain the canary from"
+         " current->stack_canary via\n"
+         "\t * sp_el0 and never references __stack_chk_guard."
+         "  Keep the global\n"
+         "\t * __stack_chk_guard exported and boot-randomized anyway:"
+         " it is part of\n"
+         "\t * the GKI ABI/KMI and is referenced by loadable modules"
+         " that use the\n"
+         "\t * classic global-canary mechanism.  Setting it once, early,"
+         " to the same\n"
+         "\t * value as the initial task canary preserves the"
+         " non-per-task semantics\n"
+         "\t * while keeping per-task protection untouched.\n"
+         "\t */\n"
+         "\t__stack_chk_guard = canary;")
 # Hand the absolute dir to later steps (prove + build pre-flight).
 gh = os.environ.get("GITHUB_ENV")
 if gh:
