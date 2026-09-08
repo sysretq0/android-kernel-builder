@@ -14,6 +14,7 @@ setup-clang.py <target> <repo>
   commit_tree only covers common/).
 - Writes .clang-version (picked up by collect-versions.py as clang.txt).
 """
+import os
 import re
 import subprocess
 import sys
@@ -87,3 +88,20 @@ if r.returncode != 0:
 line1 = r.stdout.splitlines()[0] if r.stdout else "?"
 Path(".clang-version").write_text(f"{target} {line1}\n")
 print(f"clang: {line1}")
+st = cc.stat()
+print(f"clang: bin/clang size={st.st_size} mode={oct(st.st_mode)}")
+# PATH-resolution proof, exactly the way build.sh/make will use it.
+probe = subprocess.run(["bash", "-c",
+                          "command -v clang && clang --version | head -1"],
+                         env={"PATH": f"{cc.parent.resolve()}:"
+                                     f"{os.environ.get('PATH', '')}"},
+                         capture_output=True, text=True)
+print(f"clang: PATH-probe rc={probe.returncode} "
+      f"{(probe.stdout or probe.stderr).strip()[:160]}")
+if probe.returncode != 0:
+    sys.exit("FAIL: clang not PATH-resolvable right after extract")
+# Hand the absolute dir to later steps (prove + build pre-flight).
+gh = os.environ.get("GITHUB_ENV")
+if gh:
+    with open(gh, "a") as f:
+        f.write(f"CLANG_DIR={cc.parent.resolve()}\n")

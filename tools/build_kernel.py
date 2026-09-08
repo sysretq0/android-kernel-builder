@@ -43,6 +43,12 @@ def commit_tree():
 commit_tree()
 
 if kind == "build_sh":
+    clang_dir = os.environ.get("CLANG_DIR", "")
+    if clang_dir:
+        cc = Path(clang_dir) / "clang"
+        print(f"clang pre-flight: {cc} exists={cc.exists()}", flush=True)
+        if not cc.exists():
+            sys.exit(f"FAIL: clang gone at build time: {cc}")
     Path("build.config.portable").write_text(
         "export KERNEL_DIR=common\n"
         ". ${ROOT_DIR}/${KERNEL_DIR}/build.config.gki.aarch64\n"
