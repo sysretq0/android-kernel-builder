@@ -125,22 +125,29 @@ if probe.returncode != 0:
 # Exact-string replacement, not a context diff: the two target lines
 # are byte-identical (and unique) on every build_sh tree while their
 # surroundings differ (5.15 includes system_misc.h, 5.10 does not).
-def sub_once(path, old, new):
+def sub_once(path, old, new, done):
     p = Path("common") / path
     s = p.read_text()
     n = s.count(old)
     if n == 0:
-        print(f"clang: {path} already converted, SKIP")
-        return
+        if done:
+            print(f"clang: {path} already converted, SKIP")
+            return
+        sys.exit(f"FAIL: {path}: pattern absent on fresh tree"
+                 f" (upstream drift?)")
     if n != 1:
         sys.exit(f"FAIL: {path}: expected 1 match, found {n}")
     p.write_text(s.replace(old, new))
     print(f"clang: {path} converted")
 
+# Marker (no -version suffix: invisible to collect-versions.py) tells a
+# re-run's SKIP apart from upstream drift on a fresh tree.
+done = Path(".clang-stackprotector-done").exists()
 sub_once("arch/arm64/kernel/process.c",
          "#if defined(CONFIG_STACKPROTECTOR)"
          " && !defined(CONFIG_STACKPROTECTOR_PER_TASK)",
-         "#if defined(CONFIG_STACKPROTECTOR)")
+         "#if defined(CONFIG_STACKPROTECTOR)",
+         done)
 
 sub_once("arch/arm64/include/asm/stackprotector.h",
          "\tif (!IS_ENABLED(CONFIG_STACKPROTECTOR_PER_TASK))\n"
@@ -162,7 +169,9 @@ sub_once("arch/arm64/include/asm/stackprotector.h",
          " non-per-task semantics\n"
          "\t * while keeping per-task protection untouched.\n"
          "\t */\n"
-         "\t__stack_chk_guard = canary;")
+         "\t__stack_chk_guard = canary;",
+         done)
+Path(".clang-stackprotector-done").write_text(target + "\n")
 # Hand the absolute dir to later steps (prove + build pre-flight).
 gh = os.environ.get("GITHUB_ENV")
 if gh:
