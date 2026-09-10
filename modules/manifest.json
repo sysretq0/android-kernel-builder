@@ -1,14 +1,13 @@
 {
   "_note": "Module registry: order is pipeline order, keys are the short names variants and dispatch overrides use.",
-  "order": ["bbrv3", "kernelsu-next", "nomount", "guard", "ntsync", "susfs", "module-gate"],
+  "order": ["bbrv3", "kernelsu-next", "nomount", "guard", "ntsync", "susfs"],
   "keys": {
     "bbrv3": "bbrv3",
     "kernelsu-next": "ksu",
     "nomount": "nomount",
     "guard": "guard",
     "ntsync": "ntsync",
-    "susfs": "susfs",
-    "module-gate": "mgate"
+    "susfs": "susfs"
   },
   "manager": { "module": "ksu", "repo": "KernelSU-Next/KernelSU-Next",
                "workflow": "build-manager-ci", "artifact": "manager" },
@@ -19,7 +18,6 @@
     "guard": { "label": "Partition Guard" },
     "ntsync": { "label": "NTSync" },
     "susfs": { "label": "SuSFS" },
-    "mgate": { "label": "ModuleGate" },
     "clang": { "label": "Clang" }
   }
 }

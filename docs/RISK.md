@@ -39,7 +39,6 @@ touching the committed defconfig.
 | Partition Guard LSM | LOW | Own deny-only LSM, no upstream to drift. Device-proven: blocked `dd` restore + blkdiscard + BLKDISCARD ioctl on nvram (`EPERM`, denied counter incrementing), zero false positives; KASAN race-fuzz clean. Fail-open by design; root can disable (guardrail, not cage) |
 | BBRv3 backport | LOW | Separate `tcp_bbr3.c`, BBRv1 untouched, default CC stays CUBIC, dormant until selected. Version-gated with marker + `.rej` fail-closed |
 | NTSync (in-tree 6.18, backported 5.10–6.6) | LOW | Dormant char device. Vendored base + per-tree compat, gated where the tree can't take it |
-| ModuleGate LSM (audit) | MEDIUM | **Does not boot, shelved**: the finit-module hook bootloops 5.10 on-device (~8s silent loop) — including with the hot-path fix (cached tfm, quiet enroll, release/acquire publish), which **did not help**. Hook path implicated, mechanism unknown. Dropped from both variants, untouched until further notice. Re-enable only with a booting build in hand |
 | Clang override (`build_sh` only) | MEDIUM | Whole-build codegen impact from a third-party binary — hence opt-in per dispatch, upgrade-only, kleaf excluded. Contained: stock-ABI-restoring companion conversion (counted exact-string, drift-detecting), path-exact extraction verified like make sees it, fail-closed fetch. Green on all 3 `build_sh` trees; device boot of a clang-built kernel still pending |
 
 ## Build-time tree mutations

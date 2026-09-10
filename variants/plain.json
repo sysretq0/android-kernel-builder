@@ -6,8 +6,7 @@
     "nomount": { "branch": "dev", "tag": "", "commit": "09257d7bee031f35124ed7a39e6094a4395d5746" },
     "guard": { "branch": "main", "tag": "", "commit": "e23b2d8661043c5ec99494bfac6094707897c122" },
     "bbrv3": true,
-    "ntsync": true,
-    "mgate": false
+    "ntsync": true
   },
   "branches": [
     { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts", "kind": "build_sh", "extra": ["usb-serial"] },

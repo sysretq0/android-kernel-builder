@@ -12,7 +12,6 @@ portable Kconfig fragment system. Flashable AnyKernel3 zips land on
 | `android-kernel-builder` (here) | Workflows, fragments, modules, installer, AK3 template |
 | `android-kernel-common` | Mirror of AOSP `common` (`-lts` branches built from here) |
 | `android-partition-guard` | Data-driven LSM guarding NVRAM/persist/EFS (own repo, pinned by ref) |
-| `android-module-gate` | SHA256 module-load audit LSM (own repo, pinned by ref) |
 
 ## What a build produces (per branch)
 

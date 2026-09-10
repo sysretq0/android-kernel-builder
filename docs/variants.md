@@ -16,8 +16,7 @@ fails loud on drift.
     "nomount":  { "branch": "dev", "tag": "", "commit": "<sha>" },
     "guard":    { "branch": "main", "tag": "", "commit": "<sha>" },
     "bbrv3": true,
-    "ntsync": true,
-    "mgate": false
+    "ntsync": true
   },
   "branches": [
     { "branch": "android12-5.10-lts", "manifest": "common-android12-5.10-lts",
@@ -38,8 +37,7 @@ fails loud on drift.
   (see `docs/fragments.md`); JSON stays small because the pool files
   carry the knowledge.
 - `plain` vs `susfs` differ today in KSU ref (`dev` vs `dev-susfs`)
-  and `susfs: true`. ModuleGate is `false` in both: it does not boot
-  (see `docs/RISK.md`) and stays off until further notice.
+  and `susfs: true`.
 
 ## Dispatch
 

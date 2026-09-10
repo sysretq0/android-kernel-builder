@@ -1,7 +1,7 @@
 # Fragments: portable Kconfig
 
 Pure-Kconfig additions over stock `gki_defconfig`. Anything needing
-source (KSU, SuSFS, BBRv3, NoMount, Guard, NTSync backport, ModuleGate)
+source (KSU, SuSFS, BBRv3, NoMount, Guard, NTSync backport)
 is setup-owned under `.fragments/` so symbol and source cannot disagree —
 repo fragments never carry source-backed symbols.
 
