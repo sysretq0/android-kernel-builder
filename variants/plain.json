@@ -2,8 +2,8 @@
   "defaults": {
     "our_revision": "lts",
     "fragments": true,
-    "ksu": { "branch": "dev", "tag": "", "commit": "2b31f7185460e99bc3896a639e9073b1c354ee0d" },
-    "nomount": { "branch": "dev", "tag": "", "commit": "74850fca15a6e12d2e9173c2f91a6d083d388a87" },
+    "ksu": { "branch": "dev", "tag": "", "commit": "9ba1a51e46d0e4a88ba502a80eda1351a6ce1cd8" },
+    "nomount": { "branch": "dev", "tag": "", "commit": "5fac312b143e632e483c3c8b9ab325b6d4527314" },
     "guard": { "branch": "main", "tag": "", "commit": "e23b2d8661043c5ec99494bfac6094707897c122" },
     "bbrv3": true,
     "ntsync": true
