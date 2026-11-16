@@ -3,7 +3,7 @@
     "our_revision": "lts",
     "fragments": true,
     "ksu": { "branch": "dev-susfs", "tag": "", "commit": "4776e7cd67663a532ca49ec9523cc6e9739d6cf2" },
-    "nomount": { "branch": "dev", "tag": "", "commit": "611f2420abfd49c716e7e1ca685a7b6143eb2cae" },
+    "nomount": { "branch": "dev", "tag": "", "commit": "00e7c5d4fdbf1e58decea3522b8eb7207a46d413" },
     "guard": { "branch": "main", "tag": "", "commit": "e23b2d8661043c5ec99494bfac6094707897c122" },
     "bbrv3": true,
     "ntsync": true,
